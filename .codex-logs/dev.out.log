@@ -1,0 +1,59 @@
+
+> corridor-studio-next@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.2.4
+   - Local:        http://localhost:3000
+   - Network:      http://100.109.158.78:3000
+
+ ✓ Starting...
+ ✓ Ready in 1253ms
+ ○ Compiling /twin ...
+ ✓ Compiled /twin in 1974ms (719 modules)
+ GET /twin 200 in 2188ms
+ GET /corridor-studio 200 in 2224ms
+ GET /twin 200 in 49ms
+ ✓ Compiled /vilm in 157ms (715 modules)
+ GET /vilm 200 in 202ms
+ ✓ Compiled /corridor-studio in 91ms (412 modules)
+ GET /corridor-studio 200 in 125ms
+ ✓ Compiled / in 176ms (727 modules)
+ GET / 200 in 235ms
+ GET /corridor-studio 200 in 17ms
+ ✓ Compiled /investor in 198ms (729 modules)
+ GET /investor 200 in 244ms
+ GET /twin 200 in 36ms
+ GET /twin 200 in 91ms
+ GET /corridor-studio 200 in 15ms
+ ✓ Compiled in 97ms (414 modules)
+ ✓ Compiled in 1ms (414 modules)
+ GET /corridor-studio 200 in 552ms
+ GET /twin 200 in 552ms
+ GET /corridor-studio 200 in 16ms
+ GET /twin 200 in 31ms
+ GET /corridor-studio 200 in 21ms
+ GET /twin 200 in 29ms
+ GET /twin 200 in 92ms
+ GET /corridor-studio 200 in 59ms
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1115ms (1057 modules)
+ GET /_next/static/css/app/layout.css?v=1777129807021 404 in 1358ms
+ GET /_next/static/css/app/layout.css?v=1777129807116 404 in 1299ms
+ GET /_next/static/chunks/webpack.js?v=1777129807021 404 in 1395ms
+ GET /_next/static/chunks/webpack.js?v=1777129807116 404 in 1333ms
+ GET /_next/static/chunks/main-app.js?v=1777129807021 404 in 279ms
+ GET /investor 500 in 1610ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 266ms
+ GET /_next/static/chunks/main-app.js?v=1777129807116 404 in 265ms
+ GET /_next/static/chunks/app/layout.js 404 in 267ms
+ GET /_next/static/chunks/app/corridor-studio/page.js 404 in 87ms
+ GET /twin 500 in 719ms
+ GET /corridor-studio 500 in 720ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 67ms
+ GET /_next/static/chunks/app/layout.js 404 in 70ms
+ GET /twin 500 in 259ms
+ GET /corridor-studio 500 in 258ms
+ GET /twin 500 in 272ms
+ GET /corridor-studio 500 in 260ms
+ GET /twin 500 in 249ms
+[?25h

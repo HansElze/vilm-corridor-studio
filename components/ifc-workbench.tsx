@@ -5,7 +5,9 @@ import * as THREE from "three"
 import * as OBC from "@thatopen/components"
 import { type TwinScenario, getTwinAlphaState } from "@/lib/digital-twin"
 import { getTwinAlphaEngineState } from "@/lib/engine/twin-engine"
-import { createProceduralCorridorModel, type ProceduralSelectionMeta } from "@/lib/model/procedural-corridor"
+import { createProceduralCorridorModel, getCorridorTracks, type ProceduralSelectionMeta, type CorridorTrack } from "@/lib/model/procedural-corridor"
+import { ANCHOR_VISUAL_SURFACES, VISUAL_SURFACE_OVER_LAYER, VISUAL_SURFACE_UNDER_LAYER, type VisualSurface } from "@/lib/visual-surface"
+import { VisualReferencePanel } from "@/components/visual-reference-panel"
 
 type ViewerStatus = "booting" | "ready" | "loading" | "loaded" | "error"
 type WorkbenchMode = "procedural" | "ifc"
@@ -98,6 +100,35 @@ function defaultSceneMeta(scenario: TwinScenario): ProceduralSelectionMeta {
   }
 }
 
+function visualSurfaceForMeta(meta: ProceduralSelectionMeta | null): VisualSurface | null {
+  if (!meta) return null
+  if (ANCHOR_VISUAL_SURFACES[meta.id]) return ANCHOR_VISUAL_SURFACES[meta.id]
+  if (meta.id.startsWith("under.")) return VISUAL_SURFACE_UNDER_LAYER
+  if (meta.id.startsWith("over.")) return VISUAL_SURFACE_OVER_LAYER
+  if (meta.id.startsWith("flood-")) return VISUAL_SURFACE_UNDER_LAYER
+  return VISUAL_SURFACE_OVER_LAYER
+}
+
+const BUS_COLOR = "#12f7ff"
+const BUS_COLORS: Record<string, string> = { tunnel: "#12f7ff", viaduct: "#ffd966", cut: "#7ef7a0" }
+
+function createBusMesh(section: CorridorTrack["section"]): THREE.Object3D {
+  const color = BUS_COLORS[section] ?? BUS_COLOR
+  const emissiveIntensity = section === "tunnel" ? 0.9 : 0.6
+  const group = new THREE.Group()
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(0.68, 0.48, 1.8),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity, roughness: 0.3, metalness: 0.5 }),
+  )
+  const cab = new THREE.Mesh(
+    new THREE.BoxGeometry(0.52, 0.32, 0.42),
+    new THREE.MeshStandardMaterial({ color: "#dffcff", emissive: color, emissiveIntensity: 1.4, roughness: 0.15, metalness: 0.6, transparent: true, opacity: 0.82 }),
+  )
+  cab.position.set(0, 0.28, 0.72)
+  group.add(body, cab)
+  return group
+}
+
 export function IfcWorkbench() {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const componentsRef = useRef<OBC.Components | null>(null)
@@ -106,12 +137,27 @@ export function IfcWorkbench() {
   const currentModelRef = useRef<THREE.Object3D | null>(null)
   const raycasterRef = useRef(new THREE.Raycaster())
   const frameObserverRef = useRef<ResizeObserver | null>(null)
+  const selectedMeshRef = useRef<THREE.Mesh | null>(null)
+  const origMatRef = useRef<THREE.Material | THREE.Material[] | null>(null)
+  const busGroupRef = useRef<THREE.Group | null>(null)
+  const busDataRef = useRef<Array<{ mesh: THREE.Object3D; curve: THREE.CatmullRomCurve3; t: number; speed: number }>>([])
+  const animFrameRef = useRef<number>(0)
+  const pulseMeshesRef = useRef<THREE.Mesh[]>([])
+  const lastInteractionRef = useRef<number>(0)
+  const orbitActiveRef = useRef<boolean>(false)
+  const tourIndexRef = useRef<number>(-1)
+  const scanPlaneRef = useRef<THREE.Mesh | null>(null)
+  const demoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [status, setStatus] = useState<ViewerStatus>("booting")
   const [statusMessage, setStatusMessage] = useState("Booting IFC workbench...")
   const [modelName, setModelName] = useState("Twin procedural scaffold")
   const [mode, setMode] = useState<WorkbenchMode>("procedural")
   const [proceduralScenario, setProceduralScenario] = useState<TwinScenario>("A")
   const [selectedMeta, setSelectedMeta] = useState<ProceduralSelectionMeta | null>(null)
+  const [popup, setPopup] = useState<{ x: number; y: number; meta: ProceduralSelectionMeta } | null>(null)
+  const [isOrbitActive, setIsOrbitActive] = useState(false)
+  const [tourSection, setTourSection] = useState<string | null>(null)
+  const [isDemoMode, setIsDemoMode] = useState(false)
 
   useEffect(() => {
     let disposed = false
@@ -137,13 +183,7 @@ export function IfcWorkbench() {
 
       components.init()
       world.scene.setup()
-      world.scene.three.background = new THREE.Color("#061018")
       world.camera.controls.setLookAt(24, 18, 24, 0, 0, 0)
-
-      const ambient = new THREE.AmbientLight("#9fd9ff", 1.5)
-      const directional = new THREE.DirectionalLight("#ffffff", 2.25)
-      directional.position.set(25, 35, 12)
-      world.scene.three.add(ambient, directional)
 
       const grids = components.get(OBC.Grids)
       grids.create(world)
@@ -163,12 +203,141 @@ export function IfcWorkbench() {
       worldRef.current = world
       loaderRef.current = ifcLoader
 
+      // Atmosphere
+      world.scene.three.background = new THREE.Color("#030e18")
+      world.scene.three.fog = new THREE.FogExp2("#030e18", 0.016)
+
+      // Better lighting
+      const ambient = new THREE.AmbientLight("#8bc8e8", 0.9)
+      const sun = new THREE.DirectionalLight("#c8e8ff", 1.6)
+      sun.position.set(30, 45, 15)
+      const rimLight = new THREE.DirectionalLight("#12f7ff", 0.3)
+      rimLight.position.set(-20, 10, -30)
+      world.scene.three.add(ambient, sun, rimLight)
+
       const proceduralTwin = createProceduralCorridorModel(twin, engine, "A")
       world.scene.three.add(proceduralTwin)
       currentModelRef.current = proceduralTwin
 
       frameWhenReady(world, proceduralTwin, container, frameObserverRef)
       setSelectedMeta(defaultSceneMeta("A"))
+
+      // Collect pulse meshes for beacon/anchor animation
+      const pulseMeshes: THREE.Mesh[] = []
+      proceduralTwin.traverse((obj) => {
+        if (!(obj instanceof THREE.Mesh)) return
+        const meta = obj.userData?.proceduralMeta as ProceduralSelectionMeta | undefined
+        if (meta && (meta.category === "beacon" || meta.category === "anchor" || meta.category === "pilot-node")) {
+          pulseMeshes.push(obj)
+        }
+      })
+      pulseMeshesRef.current = pulseMeshes
+      lastInteractionRef.current = performance.now()
+
+      // Moving point lights (one per section lead bus)
+      const tunnelLight = new THREE.PointLight("#12f7ff", 3.5, 18)
+      const viaductLight = new THREE.PointLight("#ffd966", 2.5, 14)
+      world.scene.three.add(tunnelLight, viaductLight)
+
+      // Bus animation with trails
+      const busGroup = new THREE.Group()
+      busGroup.name = "animated-vehicles"
+      world.scene.three.add(busGroup)
+      busGroupRef.current = busGroup
+
+      // Scan plane — sweeps vertically to show corridor is "live"
+      const scanPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(300, 200),
+        new THREE.MeshBasicMaterial({ color: "#12f7ff", transparent: true, opacity: 0.022, side: THREE.DoubleSide, depthWrite: false }),
+      )
+      scanPlane.rotation.x = -Math.PI / 2
+      world.scene.three.add(scanPlane)
+      scanPlaneRef.current = scanPlane
+
+      const TRAIL_LEN = 12
+      type BusEntry = { mesh: THREE.Object3D; curve: THREE.CatmullRomCurve3; t: number; speed: number; trailLine: THREE.Line; trailPos: Float32Array }
+
+      const tracks = getCorridorTracks()
+      const busData: BusEntry[] = []
+
+      tracks.forEach((track, i) => {
+        for (const offset of [0, 0.5]) {
+          const bus = createBusMesh(track.section)
+          busGroup.add(bus)
+
+          // Trail line
+          const trailPos = new Float32Array(TRAIL_LEN * 3)
+          const trailGeom = new THREE.BufferGeometry()
+          trailGeom.setAttribute("position", new THREE.BufferAttribute(trailPos, 3))
+          const trailColor = BUS_COLORS[track.section] ?? BUS_COLOR
+          const trailLine = new THREE.Line(
+            trailGeom,
+            new THREE.LineBasicMaterial({ color: trailColor, transparent: true, opacity: 0.35 }),
+          )
+          busGroup.add(trailLine)
+
+          busData.push({ mesh: bus, curve: track.curve, t: (i * 0.33 + offset) % 1, speed: track.speed, trailLine, trailPos })
+        }
+      })
+
+      busDataRef.current = busData
+
+      let last = performance.now()
+      function animateBuses() {
+        animFrameRef.current = requestAnimationFrame(animateBuses)
+        const now = performance.now()
+        const dt = Math.min((now - last) / 1000, 0.05)
+        last = now
+
+        for (let bi = 0; bi < busData.length; bi++) {
+          const bus = busData[bi]
+          bus.t = (bus.t + bus.speed * dt) % 1
+
+          const pos = bus.curve.getPoint(bus.t)
+          const tan = bus.curve.getTangent(bus.t)
+          bus.mesh.position.copy(pos)
+          bus.mesh.lookAt(pos.clone().add(tan))
+
+          // Shift trail positions back and prepend current
+          const tp = bus.trailPos
+          for (let j = TRAIL_LEN - 1; j > 0; j--) {
+            tp[j * 3]     = tp[(j - 1) * 3]
+            tp[j * 3 + 1] = tp[(j - 1) * 3 + 1]
+            tp[j * 3 + 2] = tp[(j - 1) * 3 + 2]
+          }
+          tp[0] = pos.x; tp[1] = pos.y; tp[2] = pos.z
+          bus.trailLine.geometry.attributes.position.needsUpdate = true
+
+          // Move point lights with lead buses (bi 0 = tunnel, bi 2 = viaduct)
+          if (bi === 0) tunnelLight.position.copy(pos).y += 1.5
+          if (bi === 2) viaductLight.position.copy(pos).y += 1.5
+        }
+
+        // Pulse beacons / anchors / pilot nodes
+        const t = now * 0.001
+        const pulseList = pulseMeshesRef.current
+        for (let pi = 0; pi < pulseList.length; pi++) {
+          const mat = pulseList[pi].material as THREE.MeshStandardMaterial
+          mat.emissiveIntensity = 0.18 + Math.sin(t * 2.0 + pi * 1.1) * 0.12
+        }
+
+        // Scan plane sweep
+        if (scanPlaneRef.current) {
+          scanPlaneRef.current.position.y = Math.sin(now * 0.00035) * 7 + 5
+        }
+
+        // Auto-orbit after 12 s of idle
+        const idleMs = now - lastInteractionRef.current
+        const shouldOrbit = idleMs > 12_000
+        if (shouldOrbit !== orbitActiveRef.current) {
+          orbitActiveRef.current = shouldOrbit
+          setIsOrbitActive(shouldOrbit)
+        }
+        if (shouldOrbit && worldRef.current) {
+          worldRef.current.camera.controls.rotate(0.004, 0, false)
+        }
+      }
+      animateBuses()
 
       setStatus("ready")
       setStatusMessage("Workbench ready. The procedural corridor twin is live, and you can replace it with an IFC import.")
@@ -182,9 +351,15 @@ export function IfcWorkbench() {
 
     return () => {
       disposed = true
+      cancelAnimationFrame(animFrameRef.current)
+      if (demoTimerRef.current) { clearInterval(demoTimerRef.current); demoTimerRef.current = null }
       frameObserverRef.current?.disconnect()
       frameObserverRef.current = null
       currentModelRef.current = null
+      busGroupRef.current = null
+      busDataRef.current = []
+      pulseMeshesRef.current = []
+      scanPlaneRef.current = null
       loaderRef.current = null
       worldRef.current = null
       componentsRef.current?.dispose()
@@ -244,6 +419,18 @@ export function IfcWorkbench() {
     currentModelRef.current = proceduralTwin
     setTimeout(() => frameObject(world, proceduralTwin), 100)
 
+    // Re-collect pulse meshes from new twin
+    const pulseMeshes: THREE.Mesh[] = []
+    proceduralTwin.traverse((obj) => {
+      if (!(obj instanceof THREE.Mesh)) return
+      const meta = obj.userData?.proceduralMeta as ProceduralSelectionMeta | undefined
+      if (meta && (meta.category === "beacon" || meta.category === "anchor" || meta.category === "pilot-node")) {
+        pulseMeshes.push(obj)
+      }
+    })
+    pulseMeshesRef.current = pulseMeshes
+    lastInteractionRef.current = performance.now()
+
     setProceduralScenario(scenario)
     setMode("procedural")
     setModelName(`Twin procedural scaffold / Scenario ${scenario}`)
@@ -263,7 +450,43 @@ export function IfcWorkbench() {
     if (world) world.camera.controls.setLookAt(24, 18, 24, 0, 0, 0, true)
   }
 
+  const TOUR_LABELS = ["Tunnel", "Viaduct", "Cut"]
+
+  function handleTour() {
+    const world = worldRef.current
+    if (!world) return
+    const tracks = getCorridorTracks()
+    if (!tracks.length) return
+    const nextIdx = (tourIndexRef.current + 1) % tracks.length
+    tourIndexRef.current = nextIdx
+    const track = tracks[nextIdx]
+    const target = track.curve.getPoint(0.5)
+    const pb = track.section === "viaduct" ? 14 : track.section === "tunnel" ? 10 : 12
+    world.camera.controls.setLookAt(
+      target.x + pb * 0.6,
+      target.y + pb * 0.9,
+      target.z + pb * 0.6,
+      target.x, target.y, target.z,
+      true,
+    )
+    lastInteractionRef.current = performance.now()
+    setTourSection(TOUR_LABELS[nextIdx])
+  }
+
+  function handleDemoToggle() {
+    if (demoTimerRef.current) {
+      clearInterval(demoTimerRef.current)
+      demoTimerRef.current = null
+      setIsDemoMode(false)
+      return
+    }
+    handleTour()
+    setIsDemoMode(true)
+    demoTimerRef.current = setInterval(() => handleTour(), 7_000)
+  }
+
   function handleViewerPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    lastInteractionRef.current = performance.now()
     if (mode !== "procedural") return
 
     const world = worldRef.current
@@ -273,9 +496,11 @@ export function IfcWorkbench() {
     if (!world || !model || !container) return
 
     const rect = container.getBoundingClientRect()
+    const px = event.clientX - rect.left
+    const py = event.clientY - rect.top
     const pointer = new THREE.Vector2(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      -((event.clientY - rect.top) / rect.height) * 2 + 1,
+      (px / rect.width) * 2 - 1,
+      -(py / rect.height) * 2 + 1,
     )
 
     const camera = world.camera?.three as THREE.Camera | undefined
@@ -283,171 +508,240 @@ export function IfcWorkbench() {
 
     raycasterRef.current.setFromCamera(pointer, camera)
     const hits = raycasterRef.current.intersectObject(model, true)
-    const meta = hits.map((hit) => getProceduralMeta(hit.object)).find(Boolean) ?? null
+    const hit = hits.find(h => getProceduralMeta(h.object))
+    const meta = hit ? getProceduralMeta(hit.object) : null
 
-    if (meta) {
+    // Restore previous highlight
+    if (selectedMeshRef.current && origMatRef.current) {
+      selectedMeshRef.current.material = origMatRef.current
+      selectedMeshRef.current = null
+      origMatRef.current = null
+    }
+
+    if (meta && hit) {
+      // Highlight hit mesh
+      const mesh = hit.object as THREE.Mesh
+      if (mesh.isMesh && !Array.isArray(mesh.material)) {
+        origMatRef.current = mesh.material
+        selectedMeshRef.current = mesh
+        const hl = (mesh.material as THREE.MeshStandardMaterial).clone()
+        hl.emissive = new THREE.Color("#12f7ff")
+        hl.emissiveIntensity = 1.2
+        mesh.material = hl
+      }
+
       setSelectedMeta(meta)
       setStatusMessage(`Selected ${meta.label}.`)
+
+      // Show popup near click, keep inside container
+      const popupX = Math.min(px + 12, rect.width - 280)
+      const popupY = Math.min(py + 12, rect.height - 140)
+      setPopup({ x: popupX, y: popupY, meta })
+    } else {
+      setPopup(null)
     }
   }
 
   return (
-    <section className="workbench-layout">
+    <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-      {/* Viewer first — 600 px tall, Fit View + Reset anchored top-right */}
-      <div style={{ position: "relative", height: 600, marginBottom: "1.5rem" }}>
+      {/* Full-height viewer */}
+      <div style={{ position: "relative", height: "calc(100vh - 120px)", minHeight: 520, borderRadius: 16, overflow: "hidden", border: "1px solid rgba(18,247,255,0.14)", background: "#050b11" }}>
         <div
           ref={containerRef}
-          className="viewer-canvas"
           style={{ width: "100%", height: "100%" }}
           onPointerDown={handleViewerPointerDown}
         />
-        <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 8 }}>
-          <button
-            type="button"
-            className="button"
-            onClick={handleFitView}
-            disabled={status === "booting" || status === "loading"}
-          >
-            Fit View
+
+        {/* Top-left: scenario + import */}
+        <div style={{ position: "absolute", top: 10, left: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {(["A", "B", "C"] as TwinScenario[]).map((s) => (
+            <button
+              key={s}
+              type="button"
+              className="button"
+              onClick={() => restoreProceduralTwin(s)}
+              style={{
+                fontSize: "0.72rem",
+                padding: "4px 12px",
+                minHeight: 30,
+                background: proceduralScenario === s && mode === "procedural" ? "rgba(18,247,255,0.15)" : "rgba(4,16,24,0.8)",
+                borderColor: proceduralScenario === s && mode === "procedural" ? "rgba(18,247,255,0.5)" : "rgba(255,255,255,0.1)",
+                color: proceduralScenario === s && mode === "procedural" ? "var(--teal)" : "var(--muted)",
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              Scenario {s}
+            </button>
+          ))}
+          <label style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            fontSize: "0.72rem", padding: "4px 12px", minHeight: 30, borderRadius: 999,
+            border: "1px solid rgba(255,255,255,0.1)", color: "var(--muted)",
+            background: "rgba(4,16,24,0.8)", backdropFilter: "blur(8px)", cursor: "pointer",
+            position: "relative",
+          }}>
+            Import IFC
+            <input type="file" accept=".ifc" onChange={handleIfcSelect} disabled={status === "booting" || status === "loading"} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
+          </label>
+          {mode === "ifc" && (
+            <button type="button" className="button" onClick={() => restoreProceduralTwin()} style={{ fontSize: "0.72rem", padding: "4px 12px", minHeight: 30, backdropFilter: "blur(8px)", background: "rgba(4,16,24,0.8)" }}>
+              ← Twin
+            </button>
+          )}
+        </div>
+
+        {/* Top-right: camera controls + status */}
+        <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 6, alignItems: "center" }}>
+          {status === "booting" || status === "loading" ? (
+            <span style={{ fontSize: "0.68rem", opacity: 0.5, background: "rgba(4,16,24,0.8)", padding: "4px 10px", borderRadius: 999, backdropFilter: "blur(8px)" }}>
+              {status === "booting" ? "Loading..." : "Importing..."}
+            </span>
+          ) : null}
+          <button type="button" className="button" onClick={handleFitView} disabled={status === "booting" || status === "loading"}
+            style={{ fontSize: "0.72rem", padding: "4px 12px", minHeight: 30, background: "rgba(4,16,24,0.8)", backdropFilter: "blur(8px)" }}>
+            Fit
           </button>
-          <button
-            type="button"
-            className="button"
-            onClick={handleReset}
-            disabled={status === "booting" || status === "loading"}
-          >
+          <button type="button" className="button" onClick={handleReset} disabled={status === "booting" || status === "loading"}
+            style={{ fontSize: "0.72rem", padding: "4px 12px", minHeight: 30, background: "rgba(4,16,24,0.8)", backdropFilter: "blur(8px)" }}>
             Reset
           </button>
+          <button type="button" className="button" onClick={handleTour} disabled={status === "booting" || status === "loading"}
+            style={{ fontSize: "0.72rem", padding: "4px 12px", minHeight: 30, background: "rgba(4,16,24,0.8)", backdropFilter: "blur(8px)", color: "var(--teal)", borderColor: "rgba(18,247,255,0.3)" }}>
+            {tourSection ? `▶ ${tourSection}` : "Tour"}
+          </button>
+          <button type="button" className="button" onClick={handleDemoToggle} disabled={status === "booting" || status === "loading"}
+            style={{ fontSize: "0.72rem", padding: "4px 12px", minHeight: 30, background: isDemoMode ? "rgba(18,247,255,0.12)" : "rgba(4,16,24,0.8)", backdropFilter: "blur(8px)", color: isDemoMode ? "var(--teal)" : "var(--muted)", borderColor: isDemoMode ? "rgba(18,247,255,0.4)" : "rgba(255,255,255,0.1)" }}>
+            {isDemoMode ? "● Demo" : "Demo"}
+          </button>
+          {isOrbitActive && (
+            <span style={{ fontSize: "0.65rem", opacity: 0.6, color: "var(--teal)", background: "rgba(4,16,24,0.8)", padding: "4px 10px", borderRadius: 999, backdropFilter: "blur(8px)", border: "1px solid rgba(18,247,255,0.2)" }}>
+              Auto-orbit
+            </span>
+          )}
         </div>
+
+        {/* Demo mode section caption */}
+        {isDemoMode && tourSection && (
+          <div style={{
+            position: "absolute", bottom: 48, left: "50%", transform: "translateX(-50%)",
+            background: "rgba(3,10,18,0.9)", border: "1px solid rgba(18,247,255,0.28)",
+            borderRadius: 10, padding: "10px 24px", pointerEvents: "none",
+            backdropFilter: "blur(14px)", textAlign: "center",
+          }}>
+            <div style={{ fontSize: "0.55rem", color: "var(--teal)", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: 3 }}>Philadelphia City Branch · Digital Twin</div>
+            <div style={{ fontSize: "1rem", fontWeight: 700, letterSpacing: "0.06em" }}>{tourSection.toUpperCase()} SECTION</div>
+          </div>
+        )}
+
+        {/* Click popup */}
+        {popup && (
+          <div style={{
+            position: "absolute", left: popup.x, top: popup.y, width: 272,
+            background: "rgba(3,10,18,0.96)", border: "1px solid rgba(18,247,255,0.32)",
+            borderRadius: 10, padding: "12px 14px", pointerEvents: "none",
+            backdropFilter: "blur(12px)", boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+          }}>
+            <div style={{ fontSize: "0.58rem", color: "var(--teal)", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 3 }}>
+              {popup.meta.category}
+            </div>
+            <div style={{ fontSize: "0.88rem", fontWeight: 700, marginBottom: 5, lineHeight: 1.25 }}>
+              {popup.meta.label}
+            </div>
+            {popup.meta.status && (
+              <span style={{ fontSize: "0.63rem", padding: "1px 8px", borderRadius: 999, border: "1px solid rgba(18,247,255,0.25)", color: "var(--teal)", display: "inline-block", marginBottom: 7 }}>
+                {popup.meta.status}
+              </span>
+            )}
+            <p style={{ margin: 0, fontSize: "0.74rem", opacity: 0.72, lineHeight: 1.5 }}>
+              {popup.meta.summary.slice(0, 140)}{popup.meta.summary.length > 140 ? "…" : ""}
+            </p>
+            {popup.meta.nextBestMove && (
+              <p style={{ margin: "8px 0 0", fontSize: "0.68rem", opacity: 0.45, lineHeight: 1.4, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 7 }}>
+                Next: {popup.meta.nextBestMove.slice(0, 100)}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Bottom-left: legend */}
+        {mode === "procedural" && (
+          <div style={{ position: "absolute", bottom: 10, left: 10, display: "flex", flexDirection: "column", gap: 5, pointerEvents: "none" }}>
+            {[
+              { color: "#ffd966", label: "Viaduct" },
+              { color: "#ffb347", label: "Cut section" },
+              { color: "#ff4fd8", label: "Tunnel" },
+              { color: "#ff9a3c", label: "Metabolic trunk" },
+              { color: "#1f4dff", label: "Flood zone" },
+            ].map(item => (
+              <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 2, background: item.color, flexShrink: 0 }} />
+                <span style={{ fontSize: "0.6rem", opacity: 0.55, color: "var(--text)", background: "rgba(3,10,18,0.6)", padding: "1px 5px", borderRadius: 3 }}>{item.label}</span>
+              </div>
+            ))}
+            <div style={{ marginTop: 4, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 5 }}>
+              {[
+                { color: "#12f7ff", label: "Bus · Tunnel" },
+                { color: "#ffd966", label: "Bus · Viaduct" },
+                { color: "#7ef7a0", label: "Bus · Cut" },
+              ].map(b => (
+                <div key={b.label} style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 2, background: b.color, boxShadow: `0 0 5px ${b.color}` }} />
+                  <span style={{ fontSize: "0.6rem", opacity: 0.55, color: "var(--text)", background: "rgba(3,10,18,0.6)", padding: "1px 5px", borderRadius: 3 }}>{b.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bottom-right: selected object quick-read */}
+        {selectedMeta && (
+          <div style={{
+            position: "absolute", bottom: 10, right: 10, width: 240,
+            background: "rgba(3,10,18,0.88)", border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 8, padding: "10px 12px", pointerEvents: "none", backdropFilter: "blur(8px)",
+          }}>
+            <div style={{ fontSize: "0.58rem", opacity: 0.4, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 3 }}>Selected</div>
+            <div style={{ fontSize: "0.78rem", fontWeight: 600, marginBottom: 4 }}>{selectedMeta.label}</div>
+            {selectedMeta.dependencies?.length ? (
+              <div style={{ fontSize: "0.65rem", opacity: 0.45, lineHeight: 1.4 }}>
+                {selectedMeta.dependencies.slice(0, 2).join(" · ")}
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
 
-      <div className="workbench-grid">
-        <div className="card">
-          <div className="eyebrow">3D Twin Direction</div>
-          <h3>Open-source parametric stack</h3>
-          <ul className="bullet-list">
-            <li>FreeCAD for constrained real-world parametric solids.</li>
-            <li>Blender Geometry Nodes for procedural corridor massing.</li>
-            <li>IfcOpenShell / Bonsai for open BIM authoring and IFC exchange.</li>
-            <li>That Open + web-ifc here in the browser for import and interaction.</li>
-          </ul>
-          <p>
-            This route now does three useful things: it renders a procedural corridor scaffold directly from the twin,
-            it can accept a real IFC model when you have one, and it lets you inspect corridor objects as engine-backed
-            entities instead of decorative geometry.
-          </p>
-        </div>
-
-        <div className="card">
-          <div className="eyebrow">Import Control</div>
-          <h3>IFC corridor workbench</h3>
-          <p>
-            Load an IFC model exported from FreeCAD, Blender + Bonsai, or any IFC-capable BIM tool. This is the right
-            exchange layer for a corridor digital twin because it preserves infrastructure objects and relationships, not
-            just triangles.
-          </p>
-          <label className="upload-button">
-            <span>Import IFC model</span>
-            <input
-              type="file"
-              accept=".ifc"
-              onChange={handleIfcSelect}
-              disabled={status === "booting" || status === "loading"}
-            />
-          </label>
-          <div className="cta-row">
-            <button type="button" className="button secondary" onClick={restoreProceduralTwin}>
-              Restore twin scaffold
-            </button>
+      {/* Compact inspector strip below viewer */}
+      {selectedMeta && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div className="card" style={{ padding: "14px 16px" }}>
+            <div className="eyebrow" style={{ marginBottom: 6 }}>Inspector · {selectedMeta.category}</div>
+            <h4 style={{ margin: "0 0 6px", fontSize: "0.9rem" }}>{selectedMeta.label}</h4>
+            <p style={{ margin: "0 0 8px", fontSize: "0.78rem", opacity: 0.7, lineHeight: 1.5 }}>{selectedMeta.summary}</p>
+            {selectedMeta.blockingRisk && (
+              <p style={{ margin: "0 0 4px", fontSize: "0.72rem", opacity: 0.5 }}>⚠ {selectedMeta.blockingRisk}</p>
+            )}
+            {selectedMeta.nextBestMove && (
+              <p style={{ margin: 0, fontSize: "0.72rem", opacity: 0.45 }}>→ {selectedMeta.nextBestMove}</p>
+            )}
           </div>
-          <div className="cta-row">
-            {(["A", "B", "C"] as TwinScenario[]).map((scenario) => (
-              <button
-                key={scenario}
-                type="button"
-                className={`button ${proceduralScenario === scenario && mode === "procedural" ? "primary" : ""}`}
-                onClick={() => restoreProceduralTwin(scenario)}
-              >
-                Scenario {scenario}
-              </button>
+          <div className="card" style={{ padding: "14px 16px" }}>
+            <div className="eyebrow" style={{ marginBottom: 6 }}>Dependencies · Proof</div>
+            {(selectedMeta.dependencies?.length
+              ? selectedMeta.dependencies
+              : ["No dependencies attached yet."]
+            ).map(d => (
+              <div key={d} style={{ fontSize: "0.74rem", opacity: 0.6, marginBottom: 4, paddingLeft: 8, borderLeft: "2px solid rgba(18,247,255,0.2)" }}>{d}</div>
+            ))}
+            {selectedMeta.linkedProofs?.map(p => (
+              <div key={p} style={{ fontSize: "0.72rem", opacity: 0.45, marginBottom: 3, paddingLeft: 8, borderLeft: "2px solid rgba(255,217,102,0.3)" }}>{p}</div>
             ))}
           </div>
-          <div className="pill-row">
-            <span className="pill">Status {status}</span>
-            <span className="pill">Mode {mode}</span>
-            <span className="pill">{modelName}</span>
-          </div>
-          <p>{statusMessage}</p>
         </div>
-      </div>
+      )}
 
-      <div className="workbench-grid">
-        <div className="card">
-          <div className="eyebrow">Engine Coupling</div>
-          <ul className="bullet-list">
-            <li>Lead scenario: {engine.scenarioReadiness[0]?.scenario}</li>
-            <li>Scenario A readiness: {engine.scenarioReadiness[0]?.score}/100</li>
-            <li>Primary blocker: {engine.corridorHud.primaryBlocker}</li>
-            <li>Next unlock: {engine.corridorHud.nextUnlock}</li>
-          </ul>
-        </div>
-        <div className="card">
-          <div className="eyebrow">3D Scaffold Legend</div>
-          <ul className="bullet-list">
-            <li>Yellow reference, cyan trace, and orange delta links distinguish the inherited spine from the active traced corridor.</li>
-            <li>Blue flood ribbons represent broader and shallower flood bands on the river side of the pilot.</li>
-            <li>Magenta beacons, green access markers, and yellow asset rings now carry click-through corridor metadata.</li>
-            <li>Orange trunk follows the traced corridor under-layer spine and exposes its dependency stack when selected.</li>
-            <li>Scenario B/C add over-layer massing above the same corridor path rather than drifting into a separate model.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="workbench-grid">
-        <div className="card">
-          <div className="eyebrow">Selection Inspector</div>
-          <h3>{selectedMeta?.label ?? "Nothing selected yet"}</h3>
-          <p>{selectedMeta?.summary ?? "Click a corridor object to inspect its engine-backed state."}</p>
-          <div className="pill-row">
-            {selectedMeta?.category ? <span className="pill">Category {selectedMeta.category}</span> : null}
-            {selectedMeta?.status ? <span className="pill">Status {selectedMeta.status}</span> : null}
-          </div>
-          {selectedMeta?.blockingRisk ? (
-            <>
-              <div className="eyebrow">Blocking Risk</div>
-              <p>{selectedMeta.blockingRisk}</p>
-            </>
-          ) : null}
-          {selectedMeta?.unlockIfResolved ? (
-            <>
-              <div className="eyebrow">Unlock If Resolved</div>
-              <p>{selectedMeta.unlockIfResolved}</p>
-            </>
-          ) : null}
-          {selectedMeta?.nextBestMove ? (
-            <>
-              <div className="eyebrow">Next Best Move</div>
-              <p>{selectedMeta.nextBestMove}</p>
-            </>
-          ) : null}
-        </div>
-
-        <div className="card">
-          <div className="eyebrow">Dependencies And Proof</div>
-          <ul className="bullet-list">
-            {(selectedMeta?.dependencies?.length ? selectedMeta.dependencies : ["Select a corridor object to see its dependencies."]).map((item) => (
-              <li key={`dep-${item}`}>{item}</li>
-            ))}
-          </ul>
-          <div className="eyebrow">Linked Proof Burdens</div>
-          <ul className="bullet-list">
-            {(selectedMeta?.linkedProofs?.length ? selectedMeta.linkedProofs : ["No linked proof burden attached to this object yet."]).map((item) => (
-              <li key={`proof-${item}`}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
+      <VisualReferencePanel surface={visualSurfaceForMeta(selectedMeta)} />
 
     </section>
   )

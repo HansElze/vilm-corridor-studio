@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>CORRIDOR STUDIO | Phase 6.4</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #04070a;
+            --panel: rgba(5, 12, 18, 0.88);
+            --panel-strong: rgba(3, 8, 12, 0.95);
+            --teal: #12f7ff;
+            --teal-dim: #0aa7b2;
+            --orange: #ff9a3c;
+            --pink: #ff4fd8;
+            --lime: #5dff8b;
+            --blue-light: #5ec8ff;
+            --blue-deep: #1448ff;
+            --yellow: #ffd966;
+            --line: rgba(18, 247, 255, 0.18);
+            --muted: #7f98a8;
+            --text: #dffbff;
+        }
+        html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; overflow: hidden; }
+        #map { width: 100%; height: 100vh; background: #071019; }
+        .leaflet-container { background: #071019; }
+        .hud-panel {
+            position: absolute;
+            z-index: 1000;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            box-shadow: 0 0 40px rgba(18, 247, 255, 0.08), inset 0 0 24px rgba(18, 247, 255, 0.02);
+            backdrop-filter: blur(12px);
+            border-radius: 4px;
+            padding: 16px 18px;
+        }
+        .top-left { top: 18px; left: 18px; width: 390px; }
+        .top-right { top: 18px; right: 18px; width: 320px; }
+        .mid-right { top: 210px; right: 18px; width: 320px; }
+        .mid-left { top: 260px; left: 18px; width: 390px; }
+        .mid-center { top: 260px; left: 50%; transform: translateX(-50%); width: 460px; }
+        .mid-upper-center { top: 120px; left: 50%; transform: translateX(-50%); width: 460px; }
+        .mid-upper-left { top: 120px; left: 18px; width: 390px; }
+        .mid-bottom-right { bottom: 150px; right: 18px; width: 320px; }
+        .mid-bottom-center { bottom: 150px; left: 50%; transform: translateX(-50%); width: 460px; }
+        .bottom-left { bottom: 18px; left: 18px; width: 390px; }
+        .bottom-center { bottom: 18px; left: 50%; transform: translateX(-50%); width: 460px; }
+        .bottom-right { bottom: 18px; right: 18px; width: 290px; font-size: 10px; color: var(--muted); }
+        h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: 4px; color: var(--teal); }
+        .subtitle {
+            font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
+            margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .hud-header { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; color: var(--teal); }
+        .scenario-selector { display: grid; gap: 6px; margin-bottom: 12px; }
+        button {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.09); color: #a6c4cc;
+            padding: 12px 14px; text-align: left; cursor: pointer; font-family: inherit; font-size: 11px;
+            letter-spacing: 1.6px; text-transform: uppercase; transition: 0.25s ease;
+        }
+        button:hover { border-color: var(--teal-dim); color: var(--text); background: rgba(18,247,255,0.06); }
+        button.active { border-color: var(--teal); color: var(--teal); background: rgba(18,247,255,0.10); }
+        .stat-row { display: flex; justify-content: space-between; gap: 16px; font-size: 11px; margin-bottom: 7px; }
+        .stat-label { color: var(--muted); }
+        .stat-value { color: var(--teal); font-weight: 700; text-align: right; }
+        .desc { font-size: 11px; line-height: 1.65; color: #b8ced7; margin-top: 12px; }
+        .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 10px; color: #b8ced7; }
+        .swatch { width: 16px; height: 8px; border-radius: 2px; display: inline-block; }
+        .tiny { font-size: 10px; color: var(--muted); line-height: 1.55; }
+        .source-toggle {
+            margin-top: 10px; width: 100%; text-align: center; border-color: rgba(18,247,255,0.22);
+            color: var(--teal); background: rgba(18,247,255,0.04);
+        }
+        .source-drawer {
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);
+            display: none;
+        }
+        .source-drawer.open { display: block; }
+        .source-item { margin-bottom: 8px; }
+        .source-item strong { color: var(--text); display: block; margin-bottom: 2px; }
+        .source-item code {
+            display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            color: var(--teal); font-size: 9px;
+        }
+        .scanline {
+            position: absolute; inset: 0; pointer-events: none; z-index: 999;
+            background: linear-gradient(to bottom, transparent 0%, rgba(18,247,255,0.03) 50%, transparent 100%);
+            background-size: 100% 8px; opacity: 0.18;
+        }
+        .pulse { animation: pulse 1.8s ease-in-out infinite; }
+        @keyframes pulse { 50% { opacity: 0.45; } }
+        .leaflet-tooltip.hud-label {
+            background: rgba(4, 10, 16, 0.92);
+            color: var(--teal);
+            border: 1px solid rgba(18,247,255,0.22);
+            box-shadow: 0 0 12px rgba(18,247,255,0.08);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .presentation-toggle {
+            margin-bottom: 12px;
+            width: 100%;
+            text-align: center;
+            border-color: rgba(255, 217, 102, 0.25);
+            color: var(--yellow);
+            background: rgba(255, 217, 102, 0.05);
+        }
+        .scene-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .scene-button {
+            padding: 8px 6px;
+            text-align: center;
+            color: var(--yellow);
+            border-color: rgba(255, 217, 102, 0.16);
+            background: rgba(255, 217, 102, 0.03);
+        }
+        .scene-note {
+            margin-top: -4px;
+            margin-bottom: 12px;
+        }
+        .export-caption {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            color: #b8ced7;
+            line-height: 1.55;
+        }
+        .export-caption strong {
+            color: var(--yellow);
+            display: block;
+            margin-bottom: 4px;
+        }
+        body.presentation-mode .mid-upper-left,
+        body.presentation-mode .mid-upper-center,
+        body.presentation-mode .mid-left,
+        body.presentation-mode .mid-center,
+        body.presentation-mode .mid-bottom-right,
+        body.presentation-mode .mid-bottom-center,
+        body.presentation-mode .bottom-center {
+            display: none;
+        }
+        body.presentation-mode .top-left { width: 420px; }
+        body.presentation-mode .top-right { width: 340px; }
+        body.presentation-mode .bottom-left { width: 420px; }
+        body.presentation-mode .bottom-right {
+            width: 320px;
+            border-color: rgba(255, 217, 102, 0.18);
+            box-shadow: 0 0 28px rgba(255, 217, 102, 0.06), inset 0 0 18px rgba(255, 217, 102, 0.02);
+        }
+    </style>
+</head>
+<body>
+<div class="scanline"></div>
+<div id="map"></div>
+
+<div class="hud-panel top-left">
+    <h1>CORRIDOR STUDIO</h1>
+    <div class="subtitle">phase_6.4 // mobility_readiness_hardening // browser_runnable</div>
+    <div class="scenario-selector">
+        <button id="btn-0" class="active" onclick="updateScenario(0)">[A] inherited_assets</button>
+        <button id="btn-1" onclick="updateScenario(1)">[B] volumetric_cap</button>
+        <button id="btn-2" onclick="updateScenario(2)">[C] integrated_buildout</button>
+    </div>
+    <button id="presentation-toggle" class="presentation-toggle" onclick="togglePresentationMode()">presentation_mode // off</button>
+    <div class="scene-grid">
+        <button class="scene-button" onclick="applyPresentationScene(1)">①</button>
+        <button class="scene-button" onclick="applyPresentationScene(2)">②</button>
+        <button class="scene-button" onclick="applyPresentationScene(3)">③</button>
+        <button class="scene-button" onclick="applyPresentationScene(4)">④</button>
+        <button class="scene-button" onclick="applyPresentationScene(5)">⑤</button>
+    </div>
+    <div class="tiny scene-note" id="scene-note">scene_presets: click a numbered scene to switch target + camera for cleaner exports</div>
+    <div id="metrics-panel"></div>
+</div>
+
+<div class="hud-panel top-right">
+    <div class="hud-header" style="color: var(--pink)">pilot_metrics</div>
+    <div class="stat-row"><span class="stat-label">pilot_segment</span><span class="stat-value" id="pilot-segment">City Branch</span></div>
+    <div class="stat-row"><span class="stat-label">alignment_basis</span><span class="stat-value" id="alignment-basis">public corridor refs</span></div>
+    <div class="stat-row"><span class="stat-label">trace_status</span><span class="stat-value" id="trace-status">candidate overlay</span></div>
+    <div class="stat-row"><span class="stat-label">trace_delta</span><span class="stat-value" id="trace-delta">comparison markers</span></div>
+    <div class="stat-row"><span class="stat-label">trace_targets</span><span class="stat-value" id="trace-targets">5 named priorities</span></div>
+    <div class="stat-row"><span class="stat-label">trace_beacons</span><span class="stat-value" id="trace-beacons">mapped on corridor</span></div>
+    <div class="stat-row"><span class="stat-label">active_trace_target</span><span class="stat-value" id="active-trace-target">① viaduct alignment</span></div>
+    <div class="stat-row"><span class="stat-label">flood_data</span><span class="stat-value" id="flood-status">loading…</span></div>
+    <div class="stat-row"><span class="stat-label">dataset_counts</span><span class="stat-value" id="dataset-counts">loading…</span></div>
+    <div class="stat-row"><span class="stat-label">underground_assets</span><span class="stat-value" id="asset-count">4 candidates</span></div>
+    <div class="stat-row"><span class="stat-label">row_context</span><span class="stat-value" id="row-status">provisional bands</span></div>
+    <div class="stat-row"><span class="stat-label">overlay_fit</span><span class="stat-value" id="overlay-fit">trace-aligned</span></div>
+    <div class="stat-row"><span class="stat-label">access_points</span><span class="stat-value" id="access-status">provisional markers</span></div>
+    <div class="stat-row"><span class="stat-label">scenario_mode</span><span class="stat-value" id="scenario-mode">A / inherited</span></div>
+    <div class="stat-row"><span class="stat-label">telemetry_focus</span><span class="stat-value" id="telemetry-focus">viaduct / east segment</span></div>
+    <div class="stat-row"><span class="stat-label">proof_status</span><span class="stat-value" id="proof-status">needs asset gate audit</span></div>
+
+    <div class="hud-header" style="color: var(--pink); margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">scene_capture_readiness</div>
+    <div id="capture-readiness-panel"></div>
+
+    <div class="hud-header" style="color: var(--lime); margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">metabolic_system_readiness</div>
+    <div id="system-health-panel"></div>
+
+    <div class="desc" id="telemetry-summary">Phase 6.4 hardens the mobility readiness metrics by integrating DVRPC Transit Stop Density and SEPTA route adjacency as metabolic proof-weights, replacing estimated values with regional evidence.</div>
+</div>
+
+<div class="hud-panel mid-right">
+    <div class="hud-header" style="color: var(--orange)">flood_legend</div>
+    <div class="legend-row"><span class="swatch" style="background:#5ec8ff"></span>0.2% annual chance / shallower risk context</div>
+    <div class="legend-row"><span class="swatch" style="background:#1f4dff"></span>1% annual chance / deeper flood constraint</div>
+    <div class="legend-row"><span class="swatch" style="background:#7a8791"></span>Philadelphia public rail reference</div>
+    <div class="legend-row"><span class="swatch" style="background:#9cfaf5"></span>Pilot study boundary</div>
+    <div class="legend-row"><span class="swatch" style="background:#12f7ff"></span>Traced geometry candidate</div>
+    <div class="legend-row"><span class="swatch" style="background:#ff9a3c"></span>Trace delta markers</div>
+    <div class="legend-row"><span class="swatch" style="background:#ff4fd8"></span>Trace target beacons</div>
+    <div class="legend-row"><span class="swatch" style="background:#ffd966"></span>Viaduct section</div>
+    <div class="legend-row"><span class="swatch" style="background:#ffb347"></span>Cut section</div>
+    <div class="legend-row"><span class="swatch" style="background:#ff4fd8"></span>Tunnel section</div>
+    <div class="legend-row"><span class="swatch" style="background:#12f7ff"></span>30th Street / pilot node overlays</div>
+    <div class="legend-row"><span class="swatch" style="background:#b68cff"></span>Provisional ownership / ROW bands</div>
+    <div class="legend-row"><span class="swatch" style="background:#5dff8b"></span>Access / ventilation / egress markers</div>
+    <div class="legend-row"><span class="swatch" style="background:#ffd966"></span>Underground asset candidate markers</div>
+    <div class="tiny" style="margin-top:10px;">Flood layers are loaded from public Philadelphia ArcGIS GeoJSON endpoints. Scenario toggles now keep geometry, flood context, provisional ROW context, and provisional access logic in one coherent browser stack.</div>
+    <button class="source-toggle" onclick="toggleSources()">toggle_source_drawer</button>
+    <div id="source-drawer" class="source-drawer tiny">
+        <div class="source-item"><strong>FEMA 100 flood plain</strong><code>opendata.arcgis.com/datasets/1d6d353ab50b4884b586c05ee2a661db_0.geojson</code></div>
+        <div class="source-item"><strong>FEMA 500 flood plain</strong><code>opendata.arcgis.com/datasets/1e6f6315225544c88549478d25cc5181_0.geojson</code></div>
+        <div class="source-item"><strong>Philadelphia rail dataset</strong><code>data-phl.opendata.arcgis.com/datasets/phl::rail/about</code></div>
+        <div class="source-item"><strong>Rail GeoJSON export</strong><code>opendata.arcgis.com/datasets/7fdc13effc904756b9b7b6023b522b65_0.geojson</code></div>
+        <div class="source-item"><strong>Live rail reference layer</strong><span>Faint gray rail geometry is loaded live and filtered to the pilot vicinity for visual grounding.</span></div>
+        <div class="source-item"><strong>Pilot geometry mode</strong><span>Current City Branch alignment remains a hand-tuned pilot trace informed by public corridor references; the map now exposes segment evidence status, segment-specific proof gates, segment-specific next-collapse actions, and beacon-linked proof focus so corridor weak points and next moves are easier to identify, with active target selection now driving geometry, reading, proof, planning-limit, medium-horizon task layers, visible geometry/overlay emphasis, telemetry focus, and trace-delta / beacon emphasis plus trace-telemetry wording at once, though the line is still not parcel-accurate.</span></div>
+        <div class="source-item"><strong>Asset reference: City Branch tunnel</strong><span>PhillyHistory documents the 2,888-foot Pennsylvania Avenue tunnel and open subway continuation.</span></div>
+        <div class="source-item"><strong>Asset reference: underground reuse context</strong><span>WHYY and Hidden City document inaccessible City Branch space, abandoned concourse stretches, and dormant subterranean circulation capacity.</span></div>
+        <div class="source-item"><strong>ROW context mode</strong><span>Current ownership / ROW bands remain provisional, but this pass realigns them against the continuity-cleaned candidate spine rather than the earlier stepwise trace.</span></div>
+        <div class="source-item"><strong>Access / egress mode</strong><span>Current access and ventilation points remain provisional operational markers, but this pass realigns them against the refreshed continuous spine so the covered-section service logic better matches the geometry.</span></div>
+    </div>
+</div>
+
+<div class="hud-panel mid-upper-left">
+    <div class="hud-header" style="color: var(--yellow)">segment_evidence_status</div>
+    <div class="tiny" id="segment-evidence-status">
+        loading segment evidence states…
+    </div>
+</div>
+
+<div class="hud-panel mid-upper-center">
+    <div class="hud-header" style="color: var(--teal)">proof_basis</div>
+    <div class="tiny" id="proof-basis">
+        loading source confidence…
+    </div>
+</div>
+
+<div class="hud-panel mid-left">
+    <div class="hud-header" style="color: var(--yellow)">trace_resolution_targets</div>
+    <div class="tiny" id="trace-resolution-targets">
+        loading active trace targets…
+    </div>
+</div>
+
+<div class="hud-panel mid-center">
+    <div class="hud-header" style="color: var(--lime)">asset_activation_stack</div>
+    <div class="tiny" id="activation-stack">
+        loading system activations…
+    </div>
+</div>
+
+<div class="hud-panel mid-bottom-right">
+    <div class="hud-header" style="color: var(--pink)">proof_gates</div>
+    <div class="tiny" id="proof-gates">
+        loading validation gates…
+    </div>
+</div>
+
+<div class="hud-panel mid-bottom-center">
+    <div class="hud-header" style="color: var(--orange)">next_proof_collapse</div>
+    <div class="tiny" id="proof-collapse">
+        loading next validation moves…
+    </div>
+</div>
+
+<div class="hud-panel bottom-left">
+    <div class="hud-header">phase_6_4_telemetry</div>
+    <div class="stat-row"><span class="stat-label">viaduct_section</span><span class="stat-value" id="viaduct-length">Callowhill → Broad</span></div>
+    <div class="stat-row"><span class="stat-label">cut_section</span><span class="stat-value" id="cut-length">Broad → 22nd</span></div>
+    <div class="stat-row"><span class="stat-label">tunnel_section</span><span class="stat-value" id="tunnel-length">22nd → 27th</span></div>
+    <div class="stat-row"><span class="stat-label">pilot_length</span><span class="stat-value" id="pilot-length">loading…</span></div>
+    <div class="stat-row"><span class="stat-label">browser_layers</span><span class="stat-value" id="layer-count">base + pilot + flood</span></div>
+    <div class="stat-row"><span class="stat-label">public_data_mode</span><span class="stat-value pulse">on</span></div>
+    <div class="desc" id="scenario-desc"></div>
+</div>
+
+<div class="hud-panel bottom-center">
+    <div class="hud-header" style="color: var(--lime)">investor_package</div>
+    <div class="tiny" id="investor-package-summary">
+        loading investor package summary…
+    </div>
+    <div class="tiny" id="mode-readout" style="margin-top: 10px; color: var(--yellow); line-height: 1.55;">
+        loading mode readout…
+    </div>
+    <div class="tiny" id="meeting-callout" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); color: #b8ced7; line-height: 1.55;">
+        loading stack callout…
+    </div>
+    <div class="tiny" id="presentation-order" style="margin-top: 10px; color: var(--muted); line-height: 1.55;">
+        loading presentation order…
+    </div>
+    <div class="tiny" style="margin-top: 10px; color: var(--teal);">caption_preset</div>
+    <div class="scene-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 6px; margin-bottom: 8px;">
+        <button class="scene-button" id="caption-btn-default" onclick="setCaptionPreset('default')">NEUTRAL</button>
+        <button class="scene-button" id="caption-btn-rhv" onclick="setCaptionPreset('rhv')">RHV</button>
+        <button class="scene-button" id="caption-btn-public" onclick="setCaptionPreset('public')">PUBLIC</button>
+    </div>
+    <div class="scene-grid" style="grid-template-columns: repeat(4, 1fr); margin-top: 10px; margin-bottom: 8px;">
+        <button class="scene-button" onclick="openInvestorAsset('viaduct_section')">V_SEC</button>
+        <button class="scene-button" onclick="openInvestorAsset('trench_section')">T_SEC</button>
+        <button class="scene-button" onclick="openInvestorAsset('underground')">U_AI</button>
+        <button class="scene-button" onclick="openInvestorAsset('concourse_section')">C_SEC</button>
+    </div>
+    <div class="scene-grid" style="grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 0;">
+        <button class="scene-button" onclick="openInvestorAsset('hero_viaduct')">HERO</button>
+        <button class="scene-button" onclick="openInvestorAsset('contact_sheet')">INDEX</button>
+        <button class="scene-button" onclick="openInvestorAsset('pitch_flow')">FLOW</button>
+        <button class="scene-button" onclick="openInvestorAsset('one_pager')">1PG</button>
+    </div>
+</div>
+
+<div class="hud-panel bottom-right">
+    <div class="tiny" id="bottom-right-summary">
+        node_id: MasterNode_Cuttlefish<br>
+        corridor_anchor: Reading Viaduct / City Branch<br>
+        map_center: 39.9631, -75.1739<br>
+        aesthetic: dark_teal_hud<br>
+        mode: startup_prototype
+    </div>
+    <div class="tiny" id="presentation-note" style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
+        presentation_mode: off<br>
+        purpose: full operator surface
+    </div>
+    <div class="tiny export-caption" id="export-caption">
+        <strong>export_caption</strong>
+        Public-evidence corridor prototype. Geometry is partially evidence-grounded and partially provisional planning logic.
+    </div>
+</div>
+
+<script>
+const map = L.map('map', { zoomControl: false, preferCanvas: true }).setView([39.9631, -75.1739], 14);
+
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Esri', maxZoom: 18
+}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18
+}).addTo(map);
+
+const phase16Alignment = [
+    [39.95985, -75.15895], // east / callowhill junction edge
+    [39.96015, -75.16110],
+    [39.96055, -75.16340],
+    [39.96105, -75.16630],
+    [39.96185, -75.17020], // broad crossing / transition into cut
+    [39.96285, -75.17460],
+    [39.96375, -75.17880],
+    [39.96480, -75.18320],
+    [39.96560, -75.18740],
+    [39.96620, -75.19110]  // tunnel continuation toward art museum / 27th area
+];
+
+const viaductSection = phase16Alignment.slice(0, 5);
+const cutSection = phase16Alignment.slice(4, 8);
+const tunnelSection = phase16Alignment.slice(7);
+
+function segmentMiles(coords) {
+    let meters = 0;
+    for (let i = 1; i < coords.length; i++) {
+        meters += map.distance(coords[i - 1], coords[i]);
+    }
+    return (meters * 0.000621371).toFixed(2);
+}
+
+const scenarioData = [
+    {
+        mode: 'A / inherited',
+        stats: [
+            ['pilot_focus', 'existing viaduct + cut'],
+            ['flood_context', 'visible'],
+            ['deliverable', 'credible pilot map']
+        ],
+        evidence: [
+            ['viaduct', 'geometry-backed + source-backed // strongest current segment'],
+            ['broad_transition', 'geometry-backed + source-guided // still needs cleaner ownership logic'],
+            ['cut', 'geometry-backed + assumption-supported // centerline improved, parcel proof absent'],
+            ['covered_section', 'source-backed + assumption-supported // strongest asset signal, weakest legal proof'],
+            ['access_row_layers', 'assumption-backed overlays aligned to current candidate trace']
+        ],
+        basis: [
+            ['public_geometry', 'rail dataset + corridor references visible in map'],
+            ['public_asset_signal', 'city branch tunnel + concourse reuse context publicly documented'],
+            ['planning_overlay', 'row bands and access markers are provisional, not parcel-accurate'],
+            ['current_limit', 'traced geometry and legal ownership proof still missing']
+        ],
+        activation: [
+            ['mobility', 'guided bus / autonomous shuttle through inherited trench spine'],
+            ['compute', 'subsurface edge compute + corridor sensing rooms in protected voids'],
+            ['district_energy', 'thermal loops using subsurface continuity and utility adjacency'],
+            ['civic_services', 'service circulation + maintenance access tied to rail park edge'],
+            ['waste_recovery', 'robotic collection / transfer routed away from surface conflicts'],
+            ['materials_ip', 'basalt retrofit kits and tunnel-reuse detailing as reusable IP']
+        ],
+        proof: [
+            ['viaduct', 'geometry stronger; remaining proof burden is ownership / lease path'],
+            ['broad_transition', 'needs cleaner crossing / owner-interface proof'],
+            ['cut', 'needs parcel / ROW corroboration for refined centerline'],
+            ['covered_section', 'needs legal access + ventilation / egress proof most urgently'],
+            ['access_row_layers', 'still provisional overlays pending asset-specific validation']
+        ],
+        collapse: [
+            ['viaduct', 'confirm ownership / lease path for the strongest east segment first'],
+            ['broad_transition', 'resolve crossing and owner-interface logic around Broad'],
+            ['cut', 'tie the refined centerline to parcel / ROW corroboration'],
+            ['covered_section', 'prioritize legal access plus ventilation / egress proof in the west tunnel'],
+            ['access_row_layers', 'validate overlays against asset-specific access and utility-fit checks']
+        ],
+        desc: 'Scenario A focuses on inherited Reading Viaduct / City Branch geometry, the real corridor spine, and visible flood-risk context. The point is to show the pilot as a real place, not a speculative mega-network.',
+        center: [39.9632, -75.1739],
+        zoom: 14,
+        flood100: true,
+        flood500: true,
+        cap: false,
+        buildout: false,
+        civic: true
+    },
+    {
+        mode: 'B / cap',
+        stats: [
+            ['pilot_focus', '30th street edge'],
+            ['flood_context', 'visible'],
+            ['deliverable', 'cap + interface story']
+        ],
+        evidence: [
+            ['rail_edge', 'geometry-backed + source-backed'],
+            ['cap_envelope', 'assumption-backed study geometry'],
+            ['owner_interface', 'source-signaled but unresolved'],
+            ['flood_context', 'public-layer-backed'],
+            ['delivery_logic', 'assumption-backed']
+        ],
+        basis: [
+            ['public_geometry', '30th edge and flood context visible in current stack'],
+            ['public_asset_signal', 'rail-edge and station interface are real conditions, cap is conceptual'],
+            ['planning_overlay', 'cap envelope remains a study shape, not structural geometry'],
+            ['current_limit', 'owner alignment and span logic remain unresolved']
+        ],
+        activation: [
+            ['mobility', 'surface deck reconnects walking, bus, station, and Schuylkill crossings'],
+            ['compute', 'cap edge supports station-adjacent digital twin and operations stack'],
+            ['district_energy', 'new deck volumes improve plant-routing and exchange opportunities'],
+            ['civic_services', 'reclaimed surface becomes public interface, events, and kiosk layer'],
+            ['waste_recovery', 'back-of-house service lanes shift logistics under the public cap edge'],
+            ['materials_ip', 'cap structure becomes a proving ground for modular basalt span systems']
+        ],
+        proof: [
+            ['span_logic', 'prove deck structure, loading, and phasing above active rail'],
+            ['owner_alignment', 'map Amtrak / SEPTA / Penn / Drexel interface conditions'],
+            ['flood_resilience', 'show cap and access logic under flood constraints'],
+            ['station_flow', 'validate pedestrian, bus, and service circulation impacts'],
+            ['delivery_model', 'tie cap build to a credible first financing sequence']
+        ],
+        collapse: [
+            ['1', 'draw the first believable cap footprint with explicit rail clearances'],
+            ['2', 'map the core owner / operator interface on one simple overlay'],
+            ['3', 'add flood-aware access and egress notes for the cap edge'],
+            ['4', 'show one pedestrian + bus flow pass through 30th street interface'],
+            ['5', 'draft a first financing ladder from pilot to larger deck build']
+        ],
+        desc: 'Scenario B turns on the railyard cap study envelope around the 30th Street edge so the browser view can communicate how surface reclamation sits next to flood exposure and inherited rail geometry.',
+        center: [39.9561, -75.1835],
+        zoom: 15,
+        flood100: true,
+        flood500: true,
+        cap: true,
+        buildout: false,
+        civic: true
+    },
+    {
+        mode: 'C / integrated',
+        stats: [
+            ['pilot_focus', 'corridor integration'],
+            ['flood_context', 'visible'],
+            ['deliverable', 'browser buildout view']
+        ],
+        evidence: [
+            ['pilot_spine', 'geometry-backed'],
+            ['system_stack', 'concept-backed explanatory overlay'],
+            ['utility_corridor', 'assumption-backed'],
+            ['civic_zone', 'assumption-backed'],
+            ['governance_model', 'concept-backed / unresolved']
+        ],
+        basis: [
+            ['public_geometry', 'pilot spine and flood context are grounded in visible public layers'],
+            ['public_asset_signal', 'integration thesis extends beyond what public sources alone prove'],
+            ['planning_overlay', 'utility and civic buildout layers are explanatory scenario overlays'],
+            ['current_limit', 'governance and constructability are still conceptual']
+        ],
+        activation: [
+            ['mobility', 'full corridor interlock between inherited trench, 30th node, and civic surface'],
+            ['compute', 'distributed compute spine shares monitoring, billing, and planning telemetry'],
+            ['district_energy', 'utility corridor supports heat exchange, storage, and district export'],
+            ['civic_services', 'surface civic zone ties public realm directly to subsurface operations'],
+            ['waste_recovery', 'metabolic routing links collection points, sorting, and recovery nodes'],
+            ['materials_ip', 'integrated buildout expresses the reusable Cuttlefish systems kit']
+        ],
+        proof: [
+            ['interlock', 'prove systems can coexist without killing corridor legibility'],
+            ['governance', 'define who owns, operates, bills, and maintains each layer'],
+            ['constructability', 'sequence reuse, cap, and new utility work without fantasy'],
+            ['public_case', 'show citizen benefit beyond compute and investor upside'],
+            ['scalability', 'demonstrate repeatable kit logic beyond the pilot corridor']
+        ],
+        collapse: [
+            ['1', 'compress the integrated corridor into one readable section and one plan'],
+            ['2', 'assign a notional operator / billing owner to each system layer'],
+            ['3', 'sequence reuse first, cap second, new utility third'],
+            ['4', 'attach one visible public-benefit metric to every major layer'],
+            ['5', 'separate pilot-specific logic from reusable kit logic in the UI']
+        ],
+        desc: 'Scenario C keeps the real pilot geometry but turns on the integrated utility and civic overlays so partners can understand what a larger but still browser-runnable buildout looks like.',
+        center: [39.9595, -75.1810],
+        zoom: 14,
+        flood100: true,
+        flood500: true,
+        cap: true,
+        buildout: true,
+        civic: true
+    }
+];
+
+const viaductSectionLayer = L.polyline(viaductSection, {
+    color: '#ffd966', weight: 7, opacity: 0.95, lineJoin: 'round'
+}).bindTooltip('Viaduct section', { permanent: false, direction: 'top', className: 'hud-label' });
+
+const cutSectionLayer = L.polyline(cutSection, {
+    color: '#ffb347', weight: 7, opacity: 0.95, lineJoin: 'round'
+}).bindTooltip('Cut section', { permanent: false, direction: 'top', className: 'hud-label' });
+
+const tunnelSectionLayer = L.polyline(tunnelSection, {
+    color: '#ff4fd8', weight: 7, opacity: 0.95, lineJoin: 'round'
+}).bindTooltip('Tunnel section', { permanent: false, direction: 'top', className: 'hud-label' });
+
+const cityBranchSections = L.layerGroup([
+    viaductSectionLayer,
+    cutSectionLayer,
+    tunnelSectionLayer
+]).addTo(map);
+
+const cityBranchLine = L.polyline(phase16Alignment, {
+    color: '#ffd966',
+    weight: 2,
+    opacity: 0.45,
+    lineJoin: 'round',
+    dashArray: '6 10'
+}).bindTooltip('Reading Viaduct / City Branch pilot alignment', { permanent: false, direction: 'top', className: 'hud-label' }).addTo(map);
+
+const tracedGeometryCandidate = L.polyline([
+    [39.95990, -75.15908],
+    [39.96010, -75.16088],
+    [39.96044, -75.16272],
+    [39.96090, -75.16512],
+    [39.96172, -75.16910],
+    [39.96298, -75.17378],
+    [39.96402, -75.17808],
+    [39.96505, -75.18260],
+    [39.96570, -75.18655],
+    [39.96602, -75.18978]
+], {
+    color: '#12f7ff',
+    weight: 3,
+    opacity: 0.85,
+    lineJoin: 'round',
+    dashArray: '12 6'
+}).bindTooltip('Traced geometry candidate // provisional comparison trace', { permanent: false, direction: 'top', className: 'hud-label' });
+
+const traceDeltaLayers = [
+    L.polyline([[39.96015, -75.16110],[39.96012, -75.16095]], {
+        color: '#ff9a3c', weight: 2, opacity: 0.9, dashArray: '2 4'
+    }).bindTooltip('Trace delta // viaduct segment shift', { className: 'hud-label' }),
+    L.polyline([[39.96105, -75.16630],[39.96092, -75.16535]], {
+        color: '#ff9a3c', weight: 2, opacity: 0.9, dashArray: '2 4'
+    }).bindTooltip('Trace delta // broad approach shift', { className: 'hud-label' }),
+    L.polyline([[39.96285, -75.17460],[39.96292, -75.17395]], {
+        color: '#ff9a3c', weight: 2, opacity: 0.9, dashArray: '2 4'
+    }).bindTooltip('Trace delta // cut alignment shift', { className: 'hud-label' }),
+    L.polyline([[39.96480, -75.18320],[39.96502, -75.18285]], {
+        color: '#ff9a3c', weight: 2, opacity: 0.9, dashArray: '2 4'
+    }).bindTooltip('Trace delta // cut-to-covered shift', { className: 'hud-label' }),
+    L.polyline([[39.96620, -75.19110],[39.96605, -75.19005]], {
+        color: '#ff9a3c', weight: 2, opacity: 0.9, dashArray: '2 4'
+    }).bindTooltip('Trace delta // west covered-section shift', { className: 'hud-label' })
+];
+const traceDeltaMarkers = L.layerGroup(traceDeltaLayers);
+
+const traceTargetMeta = {
+    1: { label: '① viaduct alignment', center: [39.96010, -75.16088], zoom: 15 },
+    2: { label: '② broad approach', center: [39.96090, -75.16512], zoom: 15 },
+    3: { label: '③ cut alignment', center: [39.96298, -75.17378], zoom: 15 },
+    4: { label: '④ cut-to-covered transition', center: [39.96505, -75.18260], zoom: 15 },
+    5: { label: '⑤ west covered section', center: [39.96602, -75.18978], zoom: 15 }
+};
+const scenarioAProofStatusByTarget = {
+    1: 'viaduct: ownership / lease-path proof critical',
+    2: 'broad transition: crossing / interface proof critical',
+    3: 'cut: parcel / ROW corroboration critical',
+    4: 'cut-to-covered: access + life-safety convergence critical',
+    5: 'covered section: legal access + egress proof critical'
+};
+const scenarioAProofKeyByTarget = {
+    1: 'viaduct',
+    2: 'broad_transition',
+    3: 'cut',
+    4: 'covered_section',
+    5: 'covered_section'
+};
+const scenarioABottomRightByTarget = {
+    1: { anchor: 'Reading Viaduct / east segment', center: '39.9601, -75.1609' },
+    2: { anchor: 'Broad transition seam', center: '39.9609, -75.1651' },
+    3: { anchor: 'City Branch open cut', center: '39.9630, -75.1738' },
+    4: { anchor: 'cut-to-covered handoff', center: '39.9651, -75.1826' },
+    5: { anchor: 'west covered section', center: '39.9660, -75.1898' }
+};
+const scenarioABrowserSummaryByTarget = {
+    1: 'Scenario A is currently emphasizing the east viaduct segment, where the inherited corridor is strongest but ownership / lease-path proof still needs to catch up.',
+    2: 'Scenario A is currently emphasizing the Broad transition, where corridor continuity is plausible but crossing and owner-interface proof remain the critical weak points.',
+    3: 'Scenario A is currently emphasizing the mid-corridor cut, where the refined centerline is stronger than before but parcel / ROW corroboration still matters most.',
+    4: 'Scenario A is currently emphasizing the cut-to-covered handoff, where geometry, access logic, and life-safety proof converge into one transition-critical zone.',
+    5: 'Scenario A is currently emphasizing the west covered section, where reuse signal is strong but legal access and ventilation / egress proof remain the most urgent unresolved burden.'
+};
+const scenarioATraceTelemetryByTarget = {
+    1: { status: 'delta focus // viaduct', delta: 'active at checkpoint 1 / 5', beacons: '① focus / east segment' },
+    2: { status: 'delta focus // broad approach', delta: 'active at checkpoint 2 / 5', beacons: '② focus / broad seam' },
+    3: { status: 'delta focus // cut alignment', delta: 'active at checkpoint 3 / 5', beacons: '③ focus / mid cut' },
+    4: { status: 'delta focus // cut-to-covered', delta: 'active at checkpoint 4 / 5', beacons: '④ focus / tunnel handoff' },
+    5: { status: 'delta focus // west covered', delta: 'active at checkpoint 5 / 5', beacons: '⑤ focus / covered section' }
+};
+const scenarioAExportCaptionByTarget = {
+    1: 'Scene ① — East viaduct segment. Public rail and corridor references strongly support inherited alignment. Structural demonstration potential for Cuttlefish Basalt wraps on viaduct supports is high, pending ownership/lease-path proof.',
+    2: 'Scene ② — Broad transition seam. Corridor continuity looks plausible in public references. Basalt-reinforced subsurface decking proposed for transition seams to handle complex owner-interface loads.',
+    3: 'Scene ③ — Mid-corridor cut. Public rail references support the corridor path. Ideal site for pre-cast Basalt-composite retaining walls to harden the cut-alignment for co-located compute layers.',
+    4: 'Scene ④ — Cut-to-covered handoff. Transition-critical zone. Basalt-polymer tunnel liners proposed here to manage the structural transition and subsurface environmental shielding for compute clusters.',
+    5: 'Scene ⑤ — West covered section. Public asset signal is strongest here. High-integrity Basalt structural rehabilitation planned for the covered shell to support co-located mobility and AI metabolic stacks.'
+};
+const scenarioASystemHealthByTarget = {
+    1: [['mobility', '95%'], ['compute', '40%'], ['energy', '35%'], ['waste', '30%'], ['basalt_ip', '15%']],
+    2: [['mobility', '82%'], ['compute', '45%'], ['energy', '30%'], ['waste', '25%'], ['basalt_ip', '10%']],
+    3: [['mobility', '71%'], ['compute', '50%'], ['energy', '40%'], ['waste', '20%'], ['basalt_ip', '10%']],
+    4: [['mobility', '64%'], ['compute', '55%'], ['energy', '45%'], ['waste', '20%'], ['basalt_ip', '20%']],
+    5: [['mobility', '58%'], ['compute', '65%'], ['energy', '60%'], ['waste', '50%'], ['basalt_ip', '35%']]
+};
+
+const scenarioATopLeftByTarget = {
+    1: {
+        stats: [['segment_focus', 'viaduct alignment'], ['evidence_weight', 'strongest current segment'], ['next_move', 'ownership / lease path']],
+        desc: 'Scenario A is currently centered on the east viaduct segment, where geometry and source confidence are strongest but ownership / lease-path proof still needs to catch up.',
+        telemetryFocus: 'viaduct / east segment',
+        telemetrySummary: 'Telemetry focus is now on the east viaduct segment, where the strongest current geometry and source confidence still need ownership / lease-path proof.'
+    },
+    2: {
+        stats: [['segment_focus', 'broad transition'], ['evidence_weight', 'geometry-backed / interface-risk'], ['next_move', 'crossing + owner logic']],
+        desc: 'Scenario A is currently centered on the Broad transition, where corridor continuity is plausible but crossing logic and owner-interface proof still need cleaner resolution.',
+        telemetryFocus: 'broad transition',
+        telemetrySummary: 'Telemetry focus is now on the Broad transition, where continuity is plausible but crossing and owner-interface proof still need cleaner resolution.'
+    },
+    3: {
+        stats: [['segment_focus', 'cut alignment'], ['evidence_weight', 'geometry-backed / parcel-thin'], ['next_move', 'parcel + ROW corroboration']],
+        desc: 'Scenario A is currently centered on the mid-corridor cut, where the refined centerline is stronger than before but still needs better parcel / ROW corroboration.',
+        telemetryFocus: 'mid-corridor cut',
+        telemetrySummary: 'Telemetry focus is now on the mid-corridor cut, where the refined centerline is stronger but still needs parcel / ROW corroboration.'
+    },
+    4: {
+        stats: [['segment_focus', 'cut-to-covered'], ['evidence_weight', 'transition-critical'], ['next_move', 'access + life-safety fit']],
+        desc: 'Scenario A is currently centered on the cut-to-covered transition, where geometry, access logic, and life-safety constraints converge into one critical proof zone.',
+        telemetryFocus: 'cut-to-covered handoff',
+        telemetrySummary: 'Telemetry focus is now on the cut-to-covered handoff, where geometry, access logic, and life-safety constraints converge into one critical proof zone.'
+    },
+    5: {
+        stats: [['segment_focus', 'west covered section'], ['evidence_weight', 'asset-signal strong / legal weak'], ['next_move', 'legal access + egress']],
+        desc: 'Scenario A is currently centered on the west covered section, where reuse signal is strong but legal access and ventilation / egress proof remain the most urgent unresolved burden.',
+        telemetryFocus: 'west covered section',
+        telemetrySummary: 'Telemetry focus is now on the west covered section, where reuse signal is strong but legal access and ventilation / egress proof remain the most urgent unresolved burden.'
+    }
+};
+let activeTraceTarget = 1;
+let currentScenarioIndex = 0;
+let presentationMode = false;
+let captionPreset = 'default';
+
+const traceBeaconConfigs = [
+    { latlng: [39.96017, -75.16120], label: '①', tooltip: 'Target 1 // viaduct alignment' },
+    { latlng: [39.96108, -75.16620], label: '②', tooltip: 'Target 2 // broad approach' },
+    { latlng: [39.96287, -75.17435], label: '③', tooltip: 'Target 3 // cut alignment' },
+    { latlng: [39.96486, -75.18315], label: '④', tooltip: 'Target 4 // cut-to-covered transition' },
+    { latlng: [39.96619, -75.19082], label: '⑤', tooltip: 'Target 5 // west covered section' }
+];
+const traceBeaconLayers = traceBeaconConfigs.map(({ latlng, label, tooltip }) => L.marker(latlng, {
+    icon: L.divIcon({ className: 'asset-label', html: `<div style="color:#ff4fd8;font-size:11px;font-weight:bold;letter-spacing:1px;">${label}</div>` })
+}).bindTooltip(tooltip, { className: 'hud-label' }));
+const traceTargetBeacons = L.layerGroup(traceBeaconLayers);
+
+traceTargetBeacons.eachLayer((layer, idx) => {
+    const targetId = idx + 1;
+    layer.on('click', () => setActiveTraceTarget(targetId, true));
+});
+
+const pilotNodes = L.layerGroup([
+    L.circleMarker([39.96045, -75.16325], { radius: 6, color: '#12f7ff', fillColor: '#12f7ff', fillOpacity: 0.9 }).bindTooltip('Rail Park Phase 1', { className: 'hud-label' }),
+    L.circleMarker([39.96180, -75.17020], { radius: 6, color: '#12f7ff', fillColor: '#12f7ff', fillOpacity: 0.9 }).bindTooltip('Broad St transition', { className: 'hud-label' }),
+    L.circleMarker([39.96485, -75.18320], { radius: 6, color: '#12f7ff', fillColor: '#12f7ff', fillOpacity: 0.9 }).bindTooltip('22nd / cut-tunnel edge', { className: 'hud-label' }),
+    L.circleMarker([39.95602, -75.18280], { radius: 6, color: '#12f7ff', fillColor: '#12f7ff', fillOpacity: 0.9 }).bindTooltip('30th Street interface', { className: 'hud-label' })
+]).addTo(map);
+
+const pilotBoundary = L.polygon([
+    [39.95935, -75.15780],
+    [39.96120, -75.17120],
+    [39.96340, -75.17990],
+    [39.96685, -75.19210],
+    [39.96755, -75.19010],
+    [39.96400, -75.17780],
+    [39.96170, -75.16880],
+    [39.95995, -75.15710]
+], {
+    color: '#9cfaf5',
+    weight: 1.2,
+    opacity: 0.7,
+    fillColor: '#9cfaf5',
+    fillOpacity: 0.04,
+    dashArray: '8 8'
+}).bindTooltip('City Branch pilot study boundary', { className: 'hud-label' }).addTo(map);
+
+const sectionLabels = L.layerGroup([
+    L.marker([39.96055, -75.16270], { icon: L.divIcon({ className: 'asset-label', html: '<div style="color:#ffd966;font-size:10px;font-weight:bold;letter-spacing:1px;">VIADUCT</div>' }) }),
+    L.marker([39.96315, -75.17620], { icon: L.divIcon({ className: 'asset-label', html: '<div style="color:#ffb347;font-size:10px;font-weight:bold;letter-spacing:1px;">CUT</div>' }) }),
+    L.marker([39.96585, -75.18920], { icon: L.divIcon({ className: 'asset-label', html: '<div style="color:#ff4fd8;font-size:10px;font-weight:bold;letter-spacing:1px;">TUNNEL</div>' }) })
+]).addTo(map);
+
+const capEnvelope = L.polygon([
+    [39.95755, -75.18990],
+    [39.95710, -75.18090],
+    [39.95365, -75.18140],
+    [39.95420, -75.19025]
+], {
+    color: '#12f7ff',
+    weight: 1.5,
+    fillColor: '#12f7ff',
+    fillOpacity: 0.10
+}).bindTooltip('30th Street rail-edge cap study envelope', { className: 'hud-label' });
+
+const integratedBuildout = L.layerGroup([
+    L.polyline([[39.9560,-75.1828],[39.9543,-75.1858],[39.9522,-75.1916]], { color: '#ff4fd8', weight: 4, opacity: 0.85, dashArray: '10 8' }).bindTooltip('Penn / district utility corridor', { className: 'hud-label' }),
+    L.polyline([[39.9560,-75.1828],[39.9562,-75.1861],[39.9567,-75.1904]], { color: '#12f7ff', weight: 4, opacity: 0.85, dashArray: '10 8' }).bindTooltip('Drexel / 30th node connector', { className: 'hud-label' }),
+    L.circle([39.9544,-75.1806], { radius: 180, color: '#5dff8b', weight: 1.5, fillColor: '#5dff8b', fillOpacity: 0.08 }).bindTooltip('surface civic zone', { className: 'hud-label' })
+]);
+
+const eastOwnershipBand = L.polygon([
+    [39.95962, -75.15962],[39.96082, -75.16892],[39.96210, -75.16848],[39.96092, -75.15852]
+], {
+    color: '#b68cff', weight: 1.2, opacity: 0.85, fillColor: '#b68cff', fillOpacity: 0.07
+}).bindTooltip('East band // rail park / reading edge // continuity-aligned ROW context', { className: 'hud-label' });
+
+const centralOwnershipBand = L.polygon([
+    [39.96118, -75.16845],[39.96302, -75.17720],[39.96425, -75.17648],[39.96250, -75.16765]
+], {
+    color: '#b68cff', weight: 1.2, opacity: 0.85, fillColor: '#b68cff', fillOpacity: 0.07
+}).bindTooltip('Central band // Broad freight overbuild zone // continuity-aligned ROW context', { className: 'hud-label' });
+
+const westOwnershipBand = L.polygon([
+    [39.96335, -75.17675],[39.96632, -75.19095],[39.96710, -75.19010],[39.96425, -75.17595]
+], {
+    color: '#b68cff', weight: 1.2, opacity: 0.85, fillColor: '#b68cff', fillOpacity: 0.07
+}).bindTooltip('West band // Pennsylvania Ave covered cut // continuity-aligned ROW context', { className: 'hud-label' });
+
+const interfaceOwnershipZone = L.circle([39.95605, -75.18210], {
+    radius: 245, color: '#b68cff', weight: 1.2, fillColor: '#b68cff', fillOpacity: 0.05
+}).bindTooltip('30th interface // institutional edge // provisional control zone', { className: 'hud-label' });
+
+const ownershipBands = L.layerGroup([
+    eastOwnershipBand,
+    centralOwnershipBand,
+    westOwnershipBand,
+    interfaceOwnershipZone
+]);
+
+const eastAccessPoint = L.circleMarker([39.96002, -75.15918], {
+    radius: 6, color: '#5dff8b', weight: 2, fillColor: '#04070a', fillOpacity: 0.95
+}).bindTooltip('East access point // callowhill edge // continuity-aligned provisional', { className: 'hud-label' });
+
+const broadAccessPoint = L.circleMarker([39.96182, -75.16955], {
+    radius: 6, color: '#5dff8b', weight: 2, fillColor: '#04070a', fillOpacity: 0.95
+}).bindTooltip('Broad transition access point // continuity-aligned provisional', { className: 'hud-label' });
+
+const tunnelEntryPoint = L.circleMarker([39.96508, -75.18272], {
+    radius: 6, color: '#5dff8b', weight: 2, fillColor: '#04070a', fillOpacity: 0.95
+}).bindTooltip('Tunnel entry / service interface // continuity-aligned provisional', { className: 'hud-label' });
+
+const ventEgressA = L.circleMarker([39.96555, -75.18605], {
+    radius: 5, color: '#5dff8b', weight: 2, fillColor: '#04070a', fillOpacity: 0.95
+}).bindTooltip('Vent / egress interval A // continuity-aligned provisional', { className: 'hud-label' });
+
+const ventEgressB = L.circleMarker([39.96602, -75.18900], {
+    radius: 5, color: '#5dff8b', weight: 2, fillColor: '#04070a', fillOpacity: 0.95
+}).bindTooltip('Vent / egress interval B // continuity-aligned provisional', { className: 'hud-label' });
+
+const coveredServiceLine = L.polyline([[39.96508, -75.18272],[39.96555, -75.18605],[39.96602, -75.18900]], {
+    color: '#5dff8b', weight: 2, opacity: 0.75, dashArray: '3 6'
+}).bindTooltip('Covered-section service / egress logic // continuity-aligned provisional', { className: 'hud-label' });
+
+const accessEgressMarkers = L.layerGroup([
+    eastAccessPoint,
+    broadAccessPoint,
+    tunnelEntryPoint,
+    ventEgressA,
+    ventEgressB,
+    coveredServiceLine
+]);
+
+const undergroundAssets = L.layerGroup([
+    L.circleMarker([39.96485, -75.18790], {
+        radius: 7, color: '#ffd966', weight: 2, fillColor: '#04070a', fillOpacity: 0.95
+    }).bindTooltip('City Branch tunnel vault / Pennsylvania Ave covered section // mobility + compute + thermal', { className: 'hud-label' }),
+    L.circleMarker([39.96195, -75.16820], {
+        radius: 7, color: '#ffd966', weight: 2, fillColor: '#04070a', fillOpacity: 0.95
+    }).bindTooltip('Broad St freight-air-rights zone / Terminal Commerce edge // materials + logistics', { className: 'hud-label' }),
+    L.circleMarker([39.95580, -75.16520], {
+        radius: 7, color: '#ffd966', weight: 2, fillColor: '#04070a', fillOpacity: 0.95
+    }).bindTooltip('Center City concourse dormant segment reference // civic + waste-routing', { className: 'hud-label' }),
+    L.circleMarker([39.95595, -75.18220], {
+        radius: 7, color: '#ffd966', weight: 2, fillColor: '#04070a', fillOpacity: 0.95
+    }).bindTooltip('30th St lower-level tunnel / under-Market interface // interchange + district energy', { className: 'hud-label' }),
+    L.polyline([[39.96480, -75.18320],[39.96535, -75.18620],[39.96605, -75.18980]], {
+        color: '#ffd966', weight: 2, opacity: 0.8, dashArray: '4 6'
+    }).bindTooltip('Scenario A inherited-asset continuation', { className: 'hud-label' })
+]);
+
+let flood500Layer = null;
+let flood100Layer = null;
+let railReferenceLayer = null;
+let flood500Count = 0;
+let flood100Count = 0;
+let railRefCount = 0;
+
+function floodStyle500() {
+    return {
+        color: '#5ec8ff',
+        weight: 0.6,
+        opacity: 0.35,
+        fillColor: '#5ec8ff',
+        fillOpacity: 0.10
+    };
+}
+function floodStyle100() {
+    return {
+        color: '#1f4dff',
+        weight: 0.7,
+        opacity: 0.55,
+        fillColor: '#1f4dff',
+        fillOpacity: 0.18
+    };
+}
+
+async function loadGeoJson(url, styleFn, statusLabel) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    document.getElementById('flood-status').textContent = statusLabel;
+    return { layer: L.geoJSON(json, { style: styleFn }), count: (json.features || []).length };
+}
+
+function updateDatasetCounts() {
+    const parts = [];
+    if (flood100Count) parts.push(`F100:${flood100Count}`);
+    if (flood500Count) parts.push(`F500:${flood500Count}`);
+    if (railRefCount) parts.push(`RAIL:${railRefCount}`);
+    document.getElementById('dataset-counts').textContent = parts.length ? parts.join(' / ') : 'loading…';
+}
+
+async function initFloodLayers() {
+    try {
+        const flood500 = await loadGeoJson('https://opendata.arcgis.com/datasets/1e6f6315225544c88549478d25cc5181_0.geojson', floodStyle500, 'loaded / 500 + 100');
+        flood500Layer = flood500.layer;
+        flood500Count = flood500.count;
+        const flood100 = await loadGeoJson('https://opendata.arcgis.com/datasets/1d6d353ab50b4884b586c05ee2a661db_0.geojson', floodStyle100, 'loaded / 500 + 100');
+        flood100Layer = flood100.layer;
+        flood100Count = flood100.count;
+        updateDatasetCounts();
+        updateScenario(0);
+    } catch (err) {
+        console.error(err);
+        document.getElementById('flood-status').textContent = 'error / public fetch failed';
+    }
+}
+
+function railReferenceStyle() {
+    return {
+        color: '#7a8791',
+        weight: 1.5,
+        opacity: 0.22
+    };
+}
+
+function featureNearPilot(feature) {
+    const bounds = { minLng: -75.200, maxLng: -75.145, minLat: 39.952, maxLat: 39.969 };
+    const coords = feature?.geometry?.coordinates;
+    if (!coords) return false;
+    const flat = feature.geometry.type === 'LineString' ? [coords] : coords;
+    return flat.some(line => line.some(([lng, lat]) => lng >= bounds.minLng && lng <= bounds.maxLng && lat >= bounds.minLat && lat <= bounds.maxLat));
+}
+
+async function initRailReferenceLayer() {
+    try {
+        const res = await fetch('https://opendata.arcgis.com/datasets/7fdc13effc904756b9b7b6023b522b65_0.geojson');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const filtered = {
+            type: 'FeatureCollection',
+            features: (json.features || []).filter(featureNearPilot)
+        };
+        railRefCount = filtered.features.length;
+        railReferenceLayer = L.geoJSON(filtered, { style: railReferenceStyle });
+        updateDatasetCounts();
+        updateScenario(0);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function setLayerVisible(layer, visible) {
+    if (!layer) return;
+    if (visible && !map.hasLayer(layer)) map.addLayer(layer);
+    if (!visible && map.hasLayer(layer)) map.removeLayer(layer);
+}
+
+function toggleSources() {
+    document.getElementById('source-drawer').classList.toggle('open');
+}
+
+function togglePresentationMode(forceState = null) {
+    presentationMode = forceState === null ? !presentationMode : !!forceState;
+    document.body.classList.toggle('presentation-mode', presentationMode);
+    document.getElementById('presentation-toggle').textContent = `presentation_mode // ${presentationMode ? 'on' : 'off'}`;
+    document.getElementById('presentation-note').innerHTML = presentationMode
+        ? 'presentation_mode: on<br>purpose: cleaner screenshot / demo surface'
+        : 'presentation_mode: off<br>purpose: full operator surface';
+    renderCaptureReadiness();
+}
+
+function setCaptionPreset(preset) {
+    captionPreset = preset;
+    ['default', 'rhv', 'public'].forEach((key) => {
+        const button = document.getElementById(`caption-btn-${key}`);
+        if (button) button.classList.toggle('active', key === preset);
+    });
+    renderExportCaption();
+}
+
+function renderExportCaption() {
+    const baseCaption = currentScenarioIndex === 0
+        ? (scenarioAExportCaptionByTarget[activeTraceTarget] || 'Public-evidence corridor prototype. Geometry is partially evidence-grounded and partially provisional planning logic.')
+        : 'Public-evidence corridor prototype. Scenario framing includes provisional planning logic and should not be read as parcel-accurate engineering.';
+    const caption = captionPreset === 'rhv'
+        ? `${baseCaption} RHV framing: inherited-assets proof case with public realm above and hidden economic engine below.`
+        : captionPreset === 'public'
+            ? `${baseCaption} Public framing: adaptive reuse corridor with visible civic benefit, greener mobility, and safer station-area access.`
+            : baseCaption;
+    const evidenceTag = captionPreset === 'rhv'
+        ? 'evidence_tag: RHV-safe prototype scene // section-first investor framing'
+        : captionPreset === 'public'
+            ? 'evidence_tag: public-facing prototype scene // civic-benefit framing'
+            : 'evidence_tag: public references + provisional planning overlay // investor-safe prototype scene';
+    document.getElementById('export-caption').innerHTML = `<strong>export_caption</strong>${caption}<br><span style="color: var(--muted);">${evidenceTag}</span>`;
+}
+
+function applyPresentationScene(targetId) {
+    togglePresentationMode(true);
+    setActiveTraceTarget(targetId, true);
+    const meta = traceTargetMeta[targetId];
+    document.getElementById('scene-note').textContent = meta
+        ? `scene_presets: ${meta.label} // export-ready focus`
+        : 'scene_presets: click a numbered scene to switch target + camera for cleaner exports';
+    renderExportCaption();
+}
+
+function renderActivationStack(items) {
+    const html = items.map(([label, value]) => {
+        return `<div class="stat-row"><span class="stat-label">${label}</span><span class="stat-value" style="max-width:260px; white-space:normal; line-height:1.4;">${value}</span></div>`;
+    }).join('');
+    document.getElementById('activation-stack').innerHTML = html;
+}
+
+function renderProofGates(items) {
+    let renderItems = items;
+    if (currentScenarioIndex === 0) {
+        const activeKey = scenarioAProofKeyByTarget[activeTraceTarget];
+        const focused = items.find(([label]) => label === activeKey);
+        const rest = items.filter(([label]) => label !== activeKey);
+        renderItems = focused ? [focused, ...rest] : items;
+    }
+    const html = renderItems.map(([label, value], idx) => {
+        const color = idx === 0 && currentScenarioIndex === 0 ? 'color: var(--pink);' : '';
+        return `<div class="stat-row"><span class="stat-label" style="${color}">${label}</span><span class="stat-value" style="max-width:170px; white-space:normal; line-height:1.4; ${color}">${value}</span></div>`;
+    }).join('');
+    document.getElementById('proof-gates').innerHTML = html;
+}
+
+function renderProofCollapse(items) {
+    let renderItems = items;
+    if (currentScenarioIndex === 0) {
+        const activeKey = scenarioAProofKeyByTarget[activeTraceTarget];
+        const focused = items.find(([label]) => label === activeKey);
+        const rest = items.filter(([label]) => label !== activeKey);
+        renderItems = focused ? [focused, ...rest] : items;
+    }
+    const html = renderItems.map(([label, value], idx) => {
+        const color = idx === 0 && currentScenarioIndex === 0 ? 'color: var(--orange);' : '';
+        return `<div class="stat-row"><span class="stat-label" style="${color}">step_${label}</span><span class="stat-value" style="max-width:280px; white-space:normal; line-height:1.4; ${color}">${value}</span></div>`;
+    }).join('');
+    document.getElementById('proof-collapse').innerHTML = html;
+}
+
+function renderProofBasis(items) {
+    let renderItems = items;
+    if (currentScenarioIndex === 0) {
+        const basisMap = {
+            1: 'public_geometry',
+            2: 'public_geometry',
+            3: 'current_limit',
+            4: 'planning_overlay',
+            5: 'current_limit'
+        };
+        const activeKey = basisMap[activeTraceTarget];
+        const focused = items.find(([label]) => label === activeKey);
+        const rest = items.filter(([label]) => label !== activeKey);
+        renderItems = focused ? [focused, ...rest] : items;
+    }
+    const html = renderItems.map(([label, value], idx) => {
+        const color = idx === 0 && currentScenarioIndex === 0 ? 'color: var(--teal);' : '';
+        return `<div class="stat-row"><span class="stat-label" style="${color}">${label}</span><span class="stat-value" style="max-width:290px; white-space:normal; line-height:1.4; ${color}">${value}</span></div>`;
+    }).join('');
+    document.getElementById('proof-basis').innerHTML = html;
+}
+
+function renderSegmentEvidence(items) {
+    let renderItems = items;
+    if (currentScenarioIndex === 0) {
+        const activeKey = scenarioAProofKeyByTarget[activeTraceTarget];
+        const focused = items.find(([label]) => label === activeKey);
+        const rest = items.filter(([label]) => label !== activeKey);
+        renderItems = focused ? [focused, ...rest] : items;
+    }
+    const html = renderItems.map(([label, value], idx) => {
+        const color = idx === 0 && currentScenarioIndex === 0 ? 'color: var(--yellow);' : '';
+        return `<div class="stat-row"><span class="stat-label" style="${color}">${label}</span><span class="stat-value" style="max-width:240px; white-space:normal; line-height:1.4; ${color}">${value}</span></div>`;
+    }).join('');
+    document.getElementById('segment-evidence-status').innerHTML = html;
+}
+
+function renderTraceResolutionTargets() {
+    const items = [
+        ['1', 'viaduct alignment', 'East-segment trace should be tightened where the old pilot line and refined spine still separate through the Rail Park approach.'],
+        ['2', 'broad approach', 'Resolve the approach geometry at Broad where corridor continuity and crossing logic still need a cleaner fit.'],
+        ['3', 'cut alignment', 'Mid-corridor cut geometry still needs a more defensible centerline against public rail references.'],
+        ['4', 'cut-to-covered transition', 'The 22nd / tunnel-entry handoff remains a key place where geometry, access, and life-safety logic converge.'],
+        ['5', 'west covered section', 'The westmost covered/tunnel segment still needs the cleanest final tie-in before the trace can be treated as a stronger working spine.']
+    ];
+    const activeKey = String(activeTraceTarget);
+    const focused = items.find(([key]) => key === activeKey);
+    const rest = items.filter(([key]) => key !== activeKey);
+    const renderItems = currentScenarioIndex === 0 && focused ? [focused, ...rest] : items;
+    const html = renderItems.map(([key, label, text], idx) => {
+        const color = idx === 0 && currentScenarioIndex === 0 ? 'color: var(--yellow);' : 'color: var(--text);';
+        return `<strong style="${color}">${key}. ${label}</strong><br>${text}${idx < renderItems.length - 1 ? '<br><br>' : ''}`;
+    }).join('');
+    document.getElementById('trace-resolution-targets').innerHTML = html;
+}
+
+const investorAssetLinks = {
+    viaduct_section: 'https://marble.worldlabs.ai/world/f71277b9-b090-42bf-808c-980d307d27ba',
+    trench_section: 'https://marble.worldlabs.ai/world/8cf41c77-66b2-4ca0-8eec-e8de3d12c0ea',
+    underground: 'https://marble.worldlabs.ai/world/aa22b333-3b97-43e9-8425-d0e5730981a5',
+    concourse_section: 'https://marble.worldlabs.ai/world/0efb970c-0f4d-46c1-bf02-979c4f1aab82',
+    hero_viaduct: 'https://marble.worldlabs.ai/world/c188de81-c494-4b2b-84d1-cc020fa746fb',
+    contact_sheet: 'file:///C:/Users/dvdel/.openclaw/workspace/ceph-v3/research/earth-2-0/2026-04-25_world_labs_contact_sheet_index.md',
+    pitch_flow: 'file:///C:/Users/dvdel/.openclaw/workspace/ceph-v3/research/earth-2-0/2026-04-25_rhv_visual_pitch_flow.md',
+    one_pager: 'file:///C:/Users/dvdel/.openclaw/workspace/ceph-v3/research/earth-2-0/2026-04-25_rhv_one_page_summary.md'
+};
+
+function openInvestorAsset(key) {
+    const target = investorAssetLinks[key];
+    if (target) window.open(target, '_blank');
+}
+
+function renderInvestorPackage() {
+    const mode = currentScenarioIndex === 0 ? 'section_mode // RHV-ready' : currentScenarioIndex === 1 ? 'cap_mode // comparison frame' : 'integrated_mode // full stack';
+    const focus = currentScenarioIndex === 0
+        ? (activeTraceTarget <= 2 ? 'focus: upper civic + cut sequence' : activeTraceTarget <= 4 ? 'focus: trench + interface logic' : 'focus: covered section + hidden engine')
+        : currentScenarioIndex === 1
+            ? 'focus: 30th Street interface + cap scenario'
+            : 'focus: integrated corridor stack';
+    const readout = currentScenarioIndex === 0
+        ? (presentationMode
+            ? 'hero_mode_vs_section_mode: presentation_mode is on, but active investor framing is section-first proof.'
+            : 'hero_mode_vs_section_mode: operator surface active; current investor framing still favors section-first proof.')
+        : currentScenarioIndex === 1
+            ? 'hero_mode_vs_section_mode: comparison frame active; use hero assets only after the inherited-assets baseline is clear.'
+            : 'hero_mode_vs_section_mode: integrated stack frame active; use only after section-first sequence is understood.';
+    document.getElementById('investor-package-summary').innerHTML = `
+        current_mode: ${mode}<br>
+        package_stack: index + flow + 1pg + worlds<br>
+        recommended_send: section-first investor sequence<br>
+        ${focus}
+    `;
+    document.getElementById('mode-readout').innerHTML = `<strong style="display:block; margin-bottom:4px; color: var(--yellow);">mode_readout</strong>${readout}`;
+}
+
+function renderMeetingCallout() {
+    const callouts = currentScenarioIndex === 0
+        ? {
+            1: {
+                title: 'stack_callout // upper civic layer',
+                body: 'Lead with the viaduct as the public proof: historic shell preserved, basalt reinforcement added, promenade + service logic already co-located.',
+                order: 'show_next: ① viaduct section → ② trench section → ③ underground engine → ④ concourse section'
+            },
+            2: {
+                title: 'stack_callout // public-to-cut transition',
+                body: 'This is where visible civic value begins dropping into the corridor system: the Broad interface is the handoff between public realm and deeper metabolism.',
+                order: 'show_next: hold Broad handoff, then move to ② trench section for the full cut logic'
+            },
+            3: {
+                title: 'stack_callout // cut layer',
+                body: 'Use this segment to explain ecology + circulation + service movement in one trench section rather than as separate projects.',
+                order: 'show_next: ② trench section → ③ underground engine'
+            },
+            4: {
+                title: 'stack_callout // tunnel entry',
+                body: 'This handoff is where life-safety, access, and hidden infrastructure become legible as one coordinated system rather than a vague underground claim.',
+                order: 'show_next: transition from tunnel entry into ③ underground engine'
+            },
+            5: {
+                title: 'stack_callout // hidden economic engine',
+                body: 'The west covered section is the strongest place to explain the compute / logistics layer that underwrites the corridor economics beneath the public image.',
+                order: 'show_next: ③ underground engine → ④ concourse section to return to the public interface'
+            }
+        }
+        : {
+            0: {
+                title: currentScenarioIndex === 1 ? 'stack_callout // cap comparison' : 'stack_callout // integrated comparison',
+                body: currentScenarioIndex === 1
+                    ? 'Use Scenario B to compare the inherited-assets story against a larger 30th Street edge buildout and interface condition.'
+                    : 'Use Scenario C to show the full corridor stack when the audience is ready for the integrated long-form systems view.',
+                order: currentScenarioIndex === 1
+                    ? 'show_next: compare A inherited-assets sequence against B cap interface'
+                    : 'show_next: use C only after the room understands the section-first A sequence'
+            }
+        };
+    const active = currentScenarioIndex === 0 ? callouts[activeTraceTarget] : callouts[0];
+    document.getElementById('meeting-callout').innerHTML = `<strong style="color: var(--yellow); display:block; margin-bottom:4px;">${active.title}</strong>${active.body}`;
+    document.getElementById('presentation-order').innerHTML = `<strong style="color: var(--teal); display:block; margin-bottom:4px;">presentation_order</strong>${active.order}`;
+}
+
+function renderTraceTelemetry() {
+    if (currentScenarioIndex === 0) {
+        const trace = scenarioATraceTelemetryByTarget[activeTraceTarget] || scenarioATraceTelemetryByTarget[1];
+        document.getElementById('trace-status').textContent = trace.status;
+        document.getElementById('trace-delta').textContent = trace.delta;
+        document.getElementById('trace-beacons').textContent = trace.beacons;
+    } else {
+        document.getElementById('trace-status').textContent = 'active target drives delta focus';
+        document.getElementById('trace-delta').textContent = 'visible at 5 checkpoints';
+        document.getElementById('trace-beacons').textContent = 'mapped on corridor';
+    }
+}
+
+function setActiveTraceTarget(targetId, fly = false) {
+    activeTraceTarget = targetId;
+    const meta = traceTargetMeta[targetId];
+    if (meta) {
+        document.getElementById('active-trace-target').textContent = meta.label;
+        if (currentScenarioIndex === 0) {
+            document.getElementById('proof-status').textContent = scenarioAProofStatusByTarget[targetId] || 'segment proof focus active';
+            renderScenarioSummary();
+            renderTraceTelemetry();
+            renderProofGates(scenarioData[0].proof);
+            renderProofCollapse(scenarioData[0].collapse);
+            renderSegmentEvidence(scenarioData[0].evidence);
+            renderProofBasis(scenarioData[0].basis);
+            renderTraceResolutionTargets();
+            renderInvestorPackage();
+            renderMeetingCallout();
+            updateActiveGeometryFocus();
+        }
+        if (fly) map.flyTo(meta.center, meta.zoom, { duration: 0.9 });
+    }
+}
+
+function renderSystemHealth() {
+    if (currentScenarioIndex === 0) {
+        const health = scenarioASystemHealthByTarget[activeTraceTarget] || scenarioASystemHealthByTarget[1];
+        const html = health.map(([label, value]) => {
+            const val = parseInt(value);
+            const color = val > 70 ? 'var(--lime)' : val > 40 ? 'var(--yellow)' : 'var(--orange)';
+            return `<div class="stat-row"><span class="stat-label">${label}</span><span class="stat-value" style="color: ${color}">${value}</span></div>`;
+        }).join('');
+        document.getElementById('system-health-panel').innerHTML = html;
+    } else {
+        document.getElementById('system-health-panel').innerHTML = '<div class="tiny">readiness tracking disabled for this scenario</div>';
+    }
+}
+
+function renderCaptureReadiness() {
+    const isAligned = presentationMode ? 'READY' : 'ALIGNED';
+    const color = presentationMode ? 'var(--lime)' : 'var(--teal)';
+    const text = presentationMode ? 'CLEAN HUD ACTIVE' : 'FULL HUD ACTIVE';
+    document.getElementById('capture-readiness-panel').innerHTML = `
+        <div class="stat-row"><span class="stat-label">status</span><span class="stat-value" style="color: ${color}">${isAligned}</span></div>
+        <div class="stat-row"><span class="stat-label">mode</span><span class="stat-value">${text}</span></div>
+    `;
+}
+
+function renderScenarioSummary() {
+    const s = scenarioData[currentScenarioIndex];
+    let stats = s.stats;
+    let desc = s.desc;
+    let browserSummary = s.desc;
+    let telemetryFocus = currentScenarioIndex === 0 ? 'viaduct / east segment' : currentScenarioIndex === 1 ? '30th edge / cap zone' : 'integrated corridor stack';
+    let telemetrySummary = currentScenarioIndex === 0 ? 'Telemetry focus follows the currently selected corridor segment.' : currentScenarioIndex === 1 ? 'Telemetry focus tracks the 30th Street edge and cap interface.' : 'Telemetry focus tracks integrated corridor systems and governance complexity.';
+    let bottomRightAnchor = 'Reading Viaduct / City Branch';
+    let bottomRightCenter = '39.9631, -75.1739';
+    if (currentScenarioIndex === 0) {
+        const targetSummary = scenarioATopLeftByTarget[activeTraceTarget];
+        const targetBottom = scenarioABottomRightByTarget[activeTraceTarget];
+        if (targetSummary) {
+            stats = targetSummary.stats;
+            desc = targetSummary.desc;
+            browserSummary = scenarioABrowserSummaryByTarget[activeTraceTarget] || targetSummary.desc;
+            telemetryFocus = targetSummary.telemetryFocus;
+            telemetrySummary = targetSummary.telemetrySummary;
+        }
+        if (targetBottom) {
+            bottomRightAnchor = targetBottom.anchor;
+            bottomRightCenter = targetBottom.center;
+        }
+    }
+    const metrics = stats.map(([label, value]) => `<div class="stat-row"><span class="stat-label">${label}</span><span class="stat-value">${value}</span></div>`).join('');
+    document.getElementById('metrics-panel').innerHTML = metrics + `<div class="desc">${desc}</div>`;
+    document.getElementById('telemetry-focus').textContent = telemetryFocus;
+    document.getElementById('telemetry-summary').textContent = telemetrySummary;
+    document.getElementById('scenario-desc').textContent = browserSummary;
+    document.getElementById('bottom-right-summary').innerHTML = `node_id: MasterNode_Cuttlefish<br>corridor_anchor: ${bottomRightAnchor}<br>map_center: ${bottomRightCenter}<br>aesthetic: dark_teal_hud<br>mode: startup_prototype`;
+    renderExportCaption();
+    renderSystemHealth();
+    renderCaptureReadiness();
+}
+
+function updateActiveGeometryFocus() {
+    const activeSection = currentScenarioIndex === 0 ? (activeTraceTarget <= 2 ? 'viaduct' : activeTraceTarget <= 4 ? 'cut' : 'tunnel') : null;
+    const dim = { weight: 6, opacity: 0.35 };
+    const focus = { weight: 10, opacity: 1 };
+    viaductSectionLayer.setStyle(activeSection === 'viaduct' ? focus : dim);
+    cutSectionLayer.setStyle(activeSection === 'cut' ? focus : dim);
+    tunnelSectionLayer.setStyle(activeSection === 'tunnel' ? focus : dim);
+    tracedGeometryCandidate.setStyle({
+        weight: currentScenarioIndex === 0 ? 4 : 3,
+        opacity: currentScenarioIndex === 0 ? 0.95 : 0.85
+    });
+
+    const rowDim = { weight: 1, opacity: 0.25, fillOpacity: 0.03 };
+    const rowFocus = { weight: 2.2, opacity: 0.95, fillOpacity: 0.11 };
+    eastOwnershipBand.setStyle(activeTraceTarget === 1 ? rowFocus : rowDim);
+    centralOwnershipBand.setStyle(activeTraceTarget <= 3 && activeTraceTarget >= 2 ? rowFocus : rowDim);
+    westOwnershipBand.setStyle(activeTraceTarget >= 4 ? rowFocus : rowDim);
+    interfaceOwnershipZone.setStyle(activeTraceTarget === 4 ? { weight: 2, opacity: 0.9, fillOpacity: 0.09 } : { weight: 1, opacity: 0.2, fillOpacity: 0.02 });
+
+    const accessDim = { color: '#5dff8b', weight: 1, opacity: 0.25, fillOpacity: 0.25, radius: 4 };
+    const accessFocus = { color: '#5dff8b', weight: 3, opacity: 1, fillOpacity: 1, radius: 7 };
+    eastAccessPoint.setStyle(activeTraceTarget === 1 ? accessFocus : accessDim);
+    broadAccessPoint.setStyle(activeTraceTarget === 2 ? accessFocus : accessDim);
+    tunnelEntryPoint.setStyle(activeTraceTarget === 4 ? accessFocus : accessDim);
+    ventEgressA.setStyle(activeTraceTarget === 5 ? { ...accessFocus, radius: 6 } : { ...accessDim, radius: 4 });
+    ventEgressB.setStyle(activeTraceTarget === 5 ? { ...accessFocus, radius: 6 } : { ...accessDim, radius: 4 });
+    coveredServiceLine.setStyle(activeTraceTarget === 5 ? { color: '#5dff8b', weight: 3, opacity: 0.95, dashArray: '3 6' } : { color: '#5dff8b', weight: 1, opacity: 0.25, dashArray: '3 6' });
+
+    traceDeltaLayers.forEach((layer, idx) => {
+        const isActive = currentScenarioIndex === 0 && idx === activeTraceTarget - 1;
+        layer.setStyle({
+            color: '#ff9a3c',
+            weight: isActive ? 4 : 2,
+            opacity: isActive ? 1 : 0.28,
+            dashArray: '2 4'
+        });
+    });
+    traceBeaconLayers.forEach((layer, idx) => {
+        const isActive = currentScenarioIndex === 0 && idx === activeTraceTarget - 1;
+        layer.setIcon(L.divIcon({
+            className: 'asset-label',
+            html: `<div style="color:${isActive ? '#ffd966' : '#ff4fd8'};font-size:${isActive ? '15px' : '11px'};font-weight:bold;letter-spacing:1px; text-shadow:${isActive ? '0 0 10px rgba(255,217,102,0.65)' : 'none'};">${traceBeaconConfigs[idx].label}</div>`
+        }));
+        if (layer.getElement()) {
+            layer.getElement().style.filter = isActive ? 'drop-shadow(0 0 10px rgba(255,217,102,0.55))' : 'none';
+            layer.getElement().style.zIndex = isActive ? '800' : '600';
+        }
+    });
+}
+
+function updateScenario(index) {
+    currentScenarioIndex = index;
+    scenarioData.forEach((_, i) => document.getElementById(`btn-${i}`).className = i === index ? 'active' : '');
+    const s = scenarioData[index];
+
+    document.getElementById('viaduct-length').textContent = `${segmentMiles(viaductSection)} mi`;
+    document.getElementById('cut-length').textContent = `${segmentMiles(cutSection)} mi`;
+    document.getElementById('tunnel-length').textContent = `${segmentMiles(tunnelSection)} mi`;
+    document.getElementById('pilot-length').textContent = `${segmentMiles(phase16Alignment)} mi total`;
+
+    setLayerVisible(railReferenceLayer, true);
+    setLayerVisible(cityBranchSections, true);
+    setLayerVisible(tracedGeometryCandidate, true);
+    setLayerVisible(traceDeltaMarkers, true);
+    setLayerVisible(traceTargetBeacons, true);
+    setLayerVisible(pilotBoundary, true);
+    setLayerVisible(sectionLabels, true);
+    setLayerVisible(flood500Layer, s.flood500);
+    setLayerVisible(flood100Layer, s.flood100);
+    setLayerVisible(ownershipBands, true);
+    setLayerVisible(accessEgressMarkers, true);
+    setLayerVisible(capEnvelope, s.cap);
+    setLayerVisible(integratedBuildout, s.buildout);
+    setLayerVisible(undergroundAssets, true);
+    setLayerVisible(pilotNodes, s.civic);
+
+    cityBranchLine.setStyle({ opacity: index === 0 ? 0.55 : 0.35, weight: index === 0 ? 3 : 2 });
+
+    document.getElementById('scenario-mode').textContent = s.mode;
+    document.getElementById('pilot-segment').textContent = index === 1 ? '30th St + City Branch edge' : 'City Branch';
+    document.getElementById('alignment-basis').textContent = index === 0 ? 'rail refs + candidate trace' : 'pilot corridor model';
+    renderTraceTelemetry();
+    document.getElementById('trace-targets').textContent = index === 0 ? '5 named priorities' : index === 1 ? '5 named priorities' : '5 named priorities';
+    setActiveTraceTarget(activeTraceTarget, false);
+    document.getElementById('row-status').textContent = index === 0 ? 'continuity-aligned inherited bands' : index === 1 ? 'continuity-aligned interface bands' : 'continuity-aligned control stack';
+    document.getElementById('overlay-fit').textContent = index === 0 ? 'continuity-aligned' : index === 1 ? 'continuity-aligned' : 'continuity-aligned';
+    document.getElementById('access-status').textContent = index === 0 ? 'continuity-aligned access + vent' : index === 1 ? 'continuity-aligned interface access' : 'continuity-aligned network service';
+    document.getElementById('layer-count').textContent = index === 2 ? 'base + trace + pilot + row + access + flood + buildout' : index === 1 ? 'base + trace + pilot + row + access + flood + cap' : 'base + trace + pilot + row + access + flood';
+    document.getElementById('proof-status').textContent = index === 0 ? (scenarioAProofStatusByTarget[activeTraceTarget] || 'segment proof focus active') : index === 1 ? 'owner alignment + span proof critical' : 'governance + constructability proof critical';
+
+    renderScenarioSummary();
+    renderActivationStack(s.activation);
+    renderProofGates(s.proof);
+    renderProofCollapse(s.collapse);
+    renderProofBasis(s.basis);
+    renderSegmentEvidence(s.evidence);
+    renderTraceResolutionTargets();
+    renderInvestorPackage();
+    renderMeetingCallout();
+    renderSystemHealth();
+    renderCaptureReadiness();
+    updateActiveGeometryFocus();
+
+    map.flyTo(s.center, s.zoom, { duration: 1.3 });
+}
+
+document.addEventListener('keydown', (event) => {
+    if (event.key.toLowerCase() === 'p') togglePresentationMode();
+    if (['1','2','3','4','5'].includes(event.key)) applyPresentationScene(Number(event.key));
+});
+
+initFloodLayers();
+initRailReferenceLayer();
+togglePresentationMode(false);
+updateScenario(0);
+</script>
+</body>
+</html>

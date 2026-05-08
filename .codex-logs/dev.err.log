@@ -1,0 +1,362 @@
+ ⚠ ./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+ ⚠ ./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+
+./app/twin/page.tsx
+Attempted import error: 'cityBranchTwin' is not exported from '@/lib/digital-twin' (imported as 'cityBranchTwin').
+
+Import trace for requested module:
+./app/twin/page.tsx
+ ⨯ Error: Cannot find module './447.js'
+Require stack:
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\corridor-studio\page.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\require.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\load-components.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\utils.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\options.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\index.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\parse-module.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\get-page-static-info.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-server.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:198:28)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:111:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:162:22)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\investor\page.js:1:6947)
+    at Object.<anonymous> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\investor\page.js:1:6996) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/investor'
+}
+ ⨯ Error: Cannot find module './447.js'
+Require stack:
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\pages\_document.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\require.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\load-components.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\utils.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\options.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\index.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\parse-module.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\get-page-static-info.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-server.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:198:28)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:111:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:162:22)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\twin\page.js:1:9644)
+    at Object.<anonymous> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\twin\page.js:1:9693) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/twin'
+}
+ ⨯ Error: Cannot find module './447.js'
+Require stack:
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\pages\_document.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\require.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\load-components.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\utils.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\options.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\index.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\parse-module.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\get-page-static-info.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-server.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:198:28)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:111:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:162:22)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\corridor-studio\page.js:1:7360)
+    at Object.<anonymous> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\corridor-studio\page.js:1:7409) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/corridor-studio'
+}
+ ⨯ Error: Cannot find module './447.js'
+Require stack:
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\pages\_document.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\require.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\load-components.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\utils.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\options.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\index.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\parse-module.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\get-page-static-info.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-server.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:198:28)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:111:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:162:22)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\twin\page.js:1:9644)
+    at Object.<anonymous> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\twin\page.js:1:9693) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/twin'
+}
+ ⨯ Error: Cannot find module './447.js'
+Require stack:
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\pages\_document.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\require.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\load-components.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\utils.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\options.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\index.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\parse-module.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\get-page-static-info.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-server.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:198:28)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:111:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:162:22)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\corridor-studio\page.js:1:7360)
+    at Object.<anonymous> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\corridor-studio\page.js:1:7409) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/corridor-studio'
+}
+ ⨯ Error: Cannot find module './447.js'
+Require stack:
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\pages\_document.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\require.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\load-components.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\utils.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\options.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\index.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\parse-module.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\get-page-static-info.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-server.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:198:28)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:111:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:162:22)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\twin\page.js:1:9644)
+    at Object.<anonymous> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\twin\page.js:1:9693) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/twin'
+}
+ ⨯ Error: Cannot find module './447.js'
+Require stack:
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\pages\_document.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\require.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\load-components.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\utils.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\options.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\index.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\parse-module.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\get-page-static-info.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-server.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:198:28)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:111:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:162:22)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\corridor-studio\page.js:1:7360)
+    at Object.<anonymous> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\corridor-studio\page.js:1:7409) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/corridor-studio'
+}
+ ⨯ Error: Cannot find module './447.js'
+Require stack:
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\pages\_document.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\require.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\load-components.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\utils.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\options.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\swc\index.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\parse-module.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\build\analysis\get-page-static-info.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\router-server.js
+- C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:198:28)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:111:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\webpack-runtime.js:162:22)
+    at <unknown> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\twin\page.js:1:9644)
+    at Object.<anonymous> (C:\Users\dvdel\OneDrive\Desktop\corridor-studio-next\.next\server\app\twin\page.js:1:9693) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/twin'
+}

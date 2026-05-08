@@ -1,0 +1,29 @@
+{
+  "name": "corridor-studio-next",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "index-images": "tsx scripts/index-image-library.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
+    "@thatopen/components": "^3.4.2",
+    "@thatopen/components-front": "^3.4.2",
+    "next": "15.2.4",
+    "react": "^19",
+    "react-dom": "^19",
+    "three": "^0.184.0",
+    "web-ifc": "^0.0.77"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}
