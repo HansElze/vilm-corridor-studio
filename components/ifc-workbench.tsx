@@ -148,6 +148,8 @@ export function IfcWorkbench() {
   const tourIndexRef = useRef<number>(-1)
   const scanPlaneRef = useRef<THREE.Mesh | null>(null)
   const demoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const schuylkillGroupRef = useRef<THREE.Group | null>(null)
+  const [showSchuylkill, setShowSchuylkill] = useState(false)
   const [status, setStatus] = useState<ViewerStatus>("booting")
   const [statusMessage, setStatusMessage] = useState("Booting IFC workbench...")
   const [modelName, setModelName] = useState("Twin procedural scaffold")
@@ -360,6 +362,7 @@ export function IfcWorkbench() {
       busDataRef.current = []
       pulseMeshesRef.current = []
       scanPlaneRef.current = null
+      schuylkillGroupRef.current = null
       loaderRef.current = null
       worldRef.current = null
       componentsRef.current?.dispose()
@@ -485,6 +488,110 @@ export function IfcWorkbench() {
     demoTimerRef.current = setInterval(() => handleTour(), 7_000)
   }
 
+  async function handleSchuylkillToggle() {
+    const world = worldRef.current
+    if (!world) return
+
+    if (schuylkillGroupRef.current) {
+      world.scene.three.remove(schuylkillGroupRef.current)
+      schuylkillGroupRef.current = null
+      // Restore original fog density
+      if (world.scene.three.fog instanceof THREE.FogExp2) {
+        world.scene.three.fog.density = 0.016
+      }
+      setShowSchuylkill(false)
+      return
+    }
+
+    const data = await fetch("/schuylkill-tunnel.json").then(r => r.json())
+    const pts: [number, number, number][] = data.alignment_pts
+
+    // Centre and scale — target ~110 scene units for full alignment
+    const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length
+    const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length
+    const scale = 110 / data.length_ft
+    const depthScale = scale * 10  // exaggerate depth so tunnel reads underground
+
+    const curvePoints = pts.map(p => new THREE.Vector3(
+      (p[0] - cx) * scale,
+      p[2] * depthScale,
+      (p[1] - cy) * scale,
+    ))
+    const curve = new THREE.CatmullRomCurve3(curvePoints)
+
+    const group = new THREE.Group()
+    group.name = "schuylkill-tunnel"
+    group.position.set(0, 0, 35)
+
+    // Concrete material — matches the precast segment reference
+    const concreteMat = new THREE.MeshStandardMaterial({
+      color: "#8a9199",
+      emissive: "#3a4855",
+      emissiveIntensity: 0.5,
+      roughness: 0.85,
+      metalness: 0.05,
+    })
+    // Slightly darker for joint faces
+    const jointMat = new THREE.MeshStandardMaterial({
+      color: "#5a6570",
+      emissive: "#1a2530",
+      emissiveIntensity: 0.4,
+      roughness: 0.9,
+      metalness: 0.0,
+    })
+
+    // One BoxGeometry per module — width × height scaled from real 40ft × 22ft cross-section
+    const moduleBoxW = (40 / data.length_ft) * 110   // ~0.38 → scaled up for visibility
+    const moduleBoxH = (22 / data.length_ft) * 110
+    const BOX_W = Math.max(moduleBoxW * 4, 2.8)
+    const BOX_H = Math.max(moduleBoxH * 4, 1.5)
+
+    data.modules.forEach((m: { start_station: number; end_station: number; length_ft: number }) => {
+      const tMid = ((m.start_station + m.end_station) / 2) / data.length_ft
+      const tStart = m.start_station / data.length_ft
+      const tEnd = m.end_station / data.length_ft
+      const pos = curve.getPoint(tMid)
+      const tan = curve.getTangent(tMid)
+
+      // Segment length in scene units
+      const startPos = curve.getPoint(tStart)
+      const endPos = curve.getPoint(tEnd)
+      const segLen = startPos.distanceTo(endPos)
+
+      const box = new THREE.Mesh(
+        new THREE.BoxGeometry(BOX_W, BOX_H, segLen - 0.05),
+        concreteMat.clone(),
+      )
+      box.position.copy(pos)
+      box.lookAt(pos.clone().add(tan))
+      group.add(box)
+
+      // Joint plane at module end
+      const jointPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(BOX_W + 0.05, BOX_H + 0.05),
+        jointMat.clone(),
+      )
+      jointPlane.position.copy(curve.getPoint(tEnd))
+      jointPlane.lookAt(curve.getPoint(tEnd).clone().add(tan))
+      group.add(jointPlane)
+    })
+
+    // Thin alignment spine so the curve reads at distance
+    const spineMat = new THREE.MeshBasicMaterial({ color: "#c0c8d0", transparent: true, opacity: 0.18 })
+    group.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 200, 0.08, 4, false), spineMat))
+
+    world.scene.three.add(group)
+    schuylkillGroupRef.current = group
+
+    // Thin the fog so the tunnel is visible at its offset distance
+    if (world.scene.three.fog instanceof THREE.FogExp2) {
+      world.scene.three.fog.density = 0.007
+    }
+
+    setShowSchuylkill(true)
+    lastInteractionRef.current = performance.now()
+  }
+
   function handleViewerPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     lastInteractionRef.current = performance.now()
     if (mode !== "procedural") return
@@ -574,6 +681,21 @@ export function IfcWorkbench() {
               Scenario {s}
             </button>
           ))}
+          <button
+            type="button"
+            className="button"
+            onClick={handleSchuylkillToggle}
+            style={{
+              fontSize: "0.72rem", padding: "4px 12px", minHeight: 30,
+              background: showSchuylkill ? "rgba(255,0,204,0.15)" : "rgba(4,16,24,0.8)",
+              borderColor: showSchuylkill ? "rgba(255,0,204,0.5)" : "rgba(255,255,255,0.1)",
+              color: showSchuylkill ? "#ff00cc" : "var(--muted)",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            {showSchuylkill ? "● Schuylkill" : "Schuylkill"}
+          </button>
+
           <label style={{
             display: "inline-flex", alignItems: "center", justifyContent: "center",
             fontSize: "0.72rem", padding: "4px 12px", minHeight: 30, borderRadius: 999,
@@ -679,6 +801,18 @@ export function IfcWorkbench() {
                 <span style={{ fontSize: "0.6rem", opacity: 0.55, color: "var(--text)", background: "rgba(3,10,18,0.6)", padding: "1px 5px", borderRadius: 3 }}>{item.label}</span>
               </div>
             ))}
+            {showSchuylkill && (
+              <div style={{ marginTop: 4, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 5 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 2, background: "#ff00cc", boxShadow: "0 0 5px #ff00cc" }} />
+                  <span style={{ fontSize: "0.6rem", opacity: 0.55, color: "var(--text)", background: "rgba(3,10,18,0.6)", padding: "1px 5px", borderRadius: 3 }}>Schuylkill Tunnel · 38 modules</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 2, background: "#ff00cc", opacity: 0.4 }} />
+                  <span style={{ fontSize: "0.6rem", opacity: 0.55, color: "var(--text)", background: "rgba(3,10,18,0.6)", padding: "1px 5px", borderRadius: 3 }}>Module joints · AASHTO 2018</span>
+                </div>
+              </div>
+            )}
             <div style={{ marginTop: 4, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 5 }}>
               {[
                 { color: "#12f7ff", label: "Bus · Tunnel" },
